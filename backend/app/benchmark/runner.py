@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
 import time
 from pathlib import Path
 
@@ -31,6 +32,10 @@ class _Stop(Exception):
 
 DATASET_PATH = ROOT / "benchmarks" / "datasets" / "ecobench-v1.json"
 RESULTS_DIR = ROOT / "benchmarks" / "results"
+
+
+def results_dir() -> Path:
+    return Path(os.environ.get("ECOCOMPUTE_RESULTS_DIR") or RESULTS_DIR)
 
 
 def load_dataset(path: Path = DATASET_PATH) -> dict:
@@ -178,10 +183,11 @@ class BenchmarkRunner:
 
     def _export(self, rid: str) -> None:
         try:
-            RESULTS_DIR.mkdir(parents=True, exist_ok=True)
+            out_dir = results_dir()
+            out_dir.mkdir(parents=True, exist_ok=True)
             run = self.store.get_run(rid)
             rows = self.store.workloads_for_run(rid)
             payload = {"run": run, "workloads": rows}
-            (RESULTS_DIR / f"run-{rid}-{run['provider']}.json").write_text(json.dumps(payload, indent=2, default=str))
+            (out_dir / f"run-{rid}-{run['provider']}.json").write_text(json.dumps(payload, indent=2, default=str))
         except Exception:  # pragma: no cover
             log.exception("could not export benchmark results")

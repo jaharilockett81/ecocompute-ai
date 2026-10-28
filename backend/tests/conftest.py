@@ -32,6 +32,7 @@ def settings(tmp_path, monkeypatch):
         monkeypatch.setenv(k, v)
     monkeypatch.setenv("ECOCOMPUTE_DATA_DIR", str(tmp_path))
     monkeypatch.setenv("ECOCOMPUTE_DB_PATH", str(tmp_path / "test.db"))
+    monkeypatch.setenv("ECOCOMPUTE_RESULTS_DIR", str(tmp_path / "results"))
     return load_settings()
 
 
