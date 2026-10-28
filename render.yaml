@@ -1,0 +1,42 @@
+# Render Blueprint for the EcoCompute API. Secrets are set in the Render dashboard (sync: false).
+services:
+  - type: web
+    name: ecocompute-api
+    runtime: docker
+    dockerfilePath: backend/Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    plan: starter
+    disk:
+      name: ecocompute-data
+      mountPath: /srv/data
+      sizeGB: 1
+    envVars:
+      - key: NEBIUS_API_KEY
+        sync: false
+      - key: ECOCOMPUTE_DEMO_ACCESS_CODE
+        sync: false
+      - key: ECOCOMPUTE_CORS_ORIGINS
+        sync: false
+      - key: NEBIUS_MODEL_SMALL
+        value: nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B
+      - key: NEBIUS_MODEL_MEDIUM
+        value: nvidia/nemotron-3-super-120b-a12b
+      - key: NEBIUS_MODEL_LARGE
+        value: nvidia/Nemotron-3-Ultra-550b-a55b
+      - key: NEBIUS_PRICE_IN_SMALL
+        value: "0.06"
+      - key: NEBIUS_PRICE_OUT_SMALL
+        value: "0.24"
+      - key: NEBIUS_PRICE_IN_MEDIUM
+        value: "0.30"
+      - key: NEBIUS_PRICE_OUT_MEDIUM
+        value: "0.90"
+      - key: NEBIUS_PRICE_IN_LARGE
+        value: "1.00"
+      - key: NEBIUS_PRICE_OUT_LARGE
+        value: "3.00"
+      - key: ECOCOMPUTE_DAILY_BUDGET_USD
+        value: "5"
+      - key: ECOCOMPUTE_RATE_LIMIT_PER_MINUTE
+        value: "12"

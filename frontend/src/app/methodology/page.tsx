@@ -40,7 +40,7 @@ P[pass | s] = 1 − Π_{k=s..K} (1 − p_k)`}</Eq>
         <Card title="3 · Benchmark design">
           <ul className="list-disc space-y-1 pl-5">
             <li>EcoBench v1: 49 original tasks in 7 categories (extraction, summarization, classification, structured JSON, reasoning, coding, data interpretation). 14 calibration and 35 held-out test cases.</li>
-            <li>Conditions: <code>fixed:&lt;tier&gt;</code> always uses one model; <code>adaptive</code> routes from the prior only (cold); <code>adaptive_warm</code> routes with evidence from the calibration split only, so no test case informs its own routing.</li>
+            <li>Conditions: <code>fixed:&lt;tier&gt;</code> always uses one model with no escalation; <code>adaptive</code> routes from the prior only (cold); <code>adaptive_warm</code> routes with evidence from the calibration split only, so no test case informs its own routing.</li>
             <li>All conditions run the same cases at temperature 0, so comparisons are paired.</li>
             <li>Pass rates carry Wilson 95% intervals. Differences versus the baseline carry paired bootstrap 95% intervals over tasks.</li>
             <li>Cost is provider-reported tokens × configured price. Hidden reasoning tokens are included because they are billed as completion tokens.</li>

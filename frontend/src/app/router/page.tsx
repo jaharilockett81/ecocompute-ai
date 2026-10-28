@@ -112,7 +112,7 @@ export default function RouterPage() {
             </table>
           </div>
           <p className="mt-3 text-xs text-muted">
-            Posterior = (k·prior + passes) / (k + n). Evidence comes only from objectively graded attempts recorded on the current provider; the warm benchmark condition uses calibration-split evidence only, so held-out test cases never inform their own routing.
+            Posterior = (k·prior + passes) / (k + n). Evidence comes from graded attempts recorded on the current provider (deterministic checks, or the model judge when a Playground user enables it). Benchmark conditions ignore this live evidence: the cold condition uses the prior only and the warm condition uses calibration-split evidence only, so held-out test cases never inform their own routing.
           </p>
         </Card>
       )}
