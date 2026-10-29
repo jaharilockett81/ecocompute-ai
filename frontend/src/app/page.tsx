@@ -19,9 +19,14 @@ export default function Overview() {
         title="Overview"
         subtitle="EcoCompute routes each task to the smallest NVIDIA Nemotron model on Nebius Token Factory that is likely to pass a deterministic quality gate, and escalates only when the gate actually fails."
         actions={
-          <Link href="/playground" className="btn btn-primary">
-            Try a workload
-          </Link>
+          <>
+            <Link href="/playground" className="btn">
+              Try a workload
+            </Link>
+            <Link href="/challenge" className="btn btn-primary">
+              Run the Challenge
+            </Link>
+          </>
         }
       />
       <ErrorBox error={error} hint={<BackendHint />} />

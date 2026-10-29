@@ -91,15 +91,20 @@ export type TraceEvent = {
 };
 
 /** POST a workload and stream trace events (SSE over fetch, since EventSource can't POST). */
-export async function streamWorkload(
-  body: unknown,
-  onEvent: (e: TraceEvent) => void,
-  signal?: AbortSignal,
-): Promise<any> {
-  const res = await fetch(apiBase() + "/api/workloads/stream", {
+export function streamWorkload(body: unknown, onEvent: (e: TraceEvent) => void, signal?: AbortSignal): Promise<any> {
+  return streamPost("/api/workloads/stream", body, onEvent, signal);
+}
+
+/** Run a Challenge scenario; events carry `lane` ("ecocompute" | "baseline"). */
+export function streamChallenge(scenarioId: string, onEvent: (e: any) => void, signal?: AbortSignal): Promise<any> {
+  return streamPost(`/api/challenge/${encodeURIComponent(scenarioId)}/stream`, undefined, onEvent, signal);
+}
+
+async function streamPost(path: string, body: unknown, onEvent: (e: any) => void, signal?: AbortSignal): Promise<any> {
+  const res = await fetch(apiBase() + path, {
     method: "POST",
-    headers: headers(true),
-    body: JSON.stringify(body),
+    headers: headers(body !== undefined),
+    body: body === undefined ? undefined : JSON.stringify(body),
     signal,
   });
   if (!res.ok || !res.body) throw await errorFrom(res);

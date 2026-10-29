@@ -55,14 +55,15 @@ TBD: note anything real from setup, e.g. catalog model IDs vs docs, usage fields
 | Time | Show | Say |
 | --- | --- | --- |
 | 0:00–0:15 | Overview | "Most apps send every request to their biggest model. EcoCompute uses the smallest Nemotron that gets it right, and proves it." |
-| 0:15–1:00 | Playground, "Strict schema extraction" preset, Run | Walk the live trace: analysis, the plan table, Nano's call with real tokens and cost, the schema check, then pass or escalate. |
-| 1:00–1:25 | Playground, "Multi-step reasoning", Preview then Run | "The router weighs a cheap first try against the chance of escalating." Point at P(pass) and expected cost. |
-| 1:25–2:10 | Benchmark Lab, completed real run | Pass rate with CIs per condition, paired comparison vs Ultra: cost and token deltas with CIs. Mention the held-out split. |
-| 2:10–2:35 | Impact | Measured vs estimated vs not observable; low/central/high bounds. |
-| 2:35–2:55 | Router evidence heatmap, Methodology | "Every decision is explainable and every number is sourced." Close with the repo and license. |
+| 0:15–1:05 | The Challenge → Routine triage → Run live | "Same task, two lanes, real Nebius calls." Point at the policy picking Nano, the validator passing, the baseline on Ultra, then the comparison row for cost and latency and the verdict. |
+| 1:05–1:55 | The Challenge → Demanding extraction → Run live | If Nano fails: show the validator's exact failure, the automatic escalation, the re-check against the same requirement. If Nano passes: say so — "escalation is never forced." Read the verdict, including any tradeoff. |
+| 1:55–2:20 | Verify it yourself | Request IDs and models as reported by Nebius; open the raw JSON link. "This is an agent making real decisions, not a dashboard." |
+| 2:20–2:45 | Benchmark Lab, completed real run | Held-out pass rates with CIs and the paired cost delta vs Ultra. |
+| 2:45–2:55 | Methodology | "Every decision is explainable; every number is sourced." |
 
 ## Testing instructions for judges
 1. Open the app URL. The sidebar should show "backend: nebius".
 2. Settings → enter the access code → Save.
-3. Playground → choose a preset → Run workload.
-4. Benchmark Lab → open the completed run to see full results.
+3. The Challenge → Run live on either scenario (about a minute). Check the request IDs and open the raw JSON links.
+4. Playground → choose a preset → Run workload.
+5. Benchmark Lab → open the completed run to see full results.

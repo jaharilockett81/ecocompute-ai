@@ -14,6 +14,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.presets import PRESETS
 from app.benchmark.runner import BenchmarkRunner, load_dataset
+from app.challenge import SCENARIO_MAP, public_scenarios, run_challenge
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger
 from app.persistence.store import Store
@@ -294,6 +295,54 @@ async def cancel_benchmark(rid: str):
 @app.get("/api/benchmarks/{rid}/workloads")
 async def benchmark_workloads(rid: str):
     return {"items": state.store.workloads_for_run(rid)}
+
+
+# ------------------------------------------------------------------ challenge
+@app.get("/api/challenge/scenarios")
+async def challenge_scenarios():
+    return {"scenarios": public_scenarios(state.settings), **_sample_flag()}
+
+
+@app.post("/api/challenge/{scenario_id}/stream", dependencies=[Depends(require_access), Depends(rate_limit)])
+async def stream_challenge(scenario_id: str):
+    """Run the scenario through EcoCompute and the fixed baseline concurrently; stream both traces."""
+    if scenario_id not in SCENARIO_MAP:
+        raise HTTPException(404, "unknown scenario")
+    queue: asyncio.Queue = asyncio.Queue()
+
+    async def emit(event: dict) -> None:
+        await queue.put(("event", event))
+
+    async def worker():
+        try:
+            await queue.put(("done", await run_challenge(state.settings, state.router, state.store, scenario_id, emit)))
+        except Exception as exc:
+            log.exception("challenge failed")
+            await queue.put(("error", {"detail": f"{type(exc).__name__}: {exc}"}))
+
+    asyncio.create_task(worker())
+
+    async def gen():
+        while True:
+            kind, payload = await queue.get()
+            yield f"event: {kind}\ndata: {json.dumps(payload, default=str)}\n\n"
+            if kind in ("done", "error"):
+                break
+
+    return StreamingResponse(gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+@app.get("/api/challenges")
+async def list_challenges(limit: int = 20):
+    return {"items": state.store.list_challenges(min(limit, 100)), **_sample_flag()}
+
+
+@app.get("/api/challenges/{cid}")
+async def get_challenge(cid: str):
+    c = state.store.get_challenge(cid)
+    if not c:
+        raise HTTPException(404, "challenge not found")
+    return c
 
 
 # ------------------------------------------------------------------ analytics

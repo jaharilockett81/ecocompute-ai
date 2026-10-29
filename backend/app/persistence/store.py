@@ -92,6 +92,19 @@ CREATE TABLE IF NOT EXISTS benchmark_runs (
     summary_json TEXT,
     config_json TEXT
 );
+
+CREATE TABLE IF NOT EXISTS challenges (
+    id TEXT PRIMARY KEY,
+    created_at REAL NOT NULL,
+    finished_at REAL,
+    status TEXT NOT NULL,              -- running | completed | failed
+    scenario_id TEXT NOT NULL,
+    provider TEXT,
+    ecocompute_workload_id TEXT,
+    baseline_workload_id TEXT,
+    comparison_json TEXT,
+    error TEXT
+);
 """
 
 
@@ -258,8 +271,33 @@ class Store:
     def list_runs(self, limit: int = 20) -> list[dict]:
         return [_deser_run(r) for r in self._all("SELECT * FROM benchmark_runs ORDER BY created_at DESC LIMIT ?", (limit,))]
 
+    # -------------------------------------------------------------- challenges
+    def create_challenge(self, **fields: Any) -> str:
+        cid = new_id()
+        fields.setdefault("created_at", time.time())
+        fields.setdefault("status", "running")
+        cols = ["id", *fields.keys()]
+        self._exec(
+            f"INSERT INTO challenges ({','.join(cols)}) VALUES ({','.join('?' * len(cols))})",
+            (cid, *[_ser(v) for v in fields.values()]),
+        )
+        return cid
+
+    def update_challenge(self, cid: str, **fields: Any) -> None:
+        if fields:
+            sets = ",".join(f"{k}=?" for k in fields)
+            self._exec(f"UPDATE challenges SET {sets} WHERE id=?", (*[_ser(v) for v in fields.values()], cid))
+
+    def get_challenge(self, cid: str) -> dict | None:
+        row = self._one("SELECT * FROM challenges WHERE id=?", (cid,))
+        return _deser_challenge(row) if row else None
+
+    def list_challenges(self, limit: int = 20) -> list[dict]:
+        return [_deser_challenge(r) for r in self._all("SELECT * FROM challenges ORDER BY created_at DESC LIMIT ?", (limit,))]
+
     def mark_interrupted_runs(self) -> None:
         self._exec("UPDATE benchmark_runs SET status='failed', error='Server restarted during run' WHERE status IN ('queued','running')")
+        self._exec("UPDATE challenges SET status='failed', error='Server restarted during run' WHERE status='running'")
         self._exec("UPDATE workloads SET status='error' WHERE status='running'")
 
 
@@ -286,4 +324,10 @@ def _deser_run(row: dict) -> dict:
     for key in ("conditions_json", "case_ids_json", "summary_json", "config_json"):
         raw = row.pop(key, None)
         row[key.removesuffix("_json")] = json.loads(raw) if raw else None
+    return row
+
+
+def _deser_challenge(row: dict) -> dict:
+    raw = row.pop("comparison_json", None)
+    row["comparison"] = json.loads(raw) if raw else None
     return row

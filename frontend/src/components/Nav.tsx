@@ -6,6 +6,7 @@ import { useApi } from "@/lib/useApi";
 
 const LINKS = [
   { href: "/", label: "Overview" },
+  { href: "/challenge", label: "The Challenge" },
   { href: "/playground", label: "Playground" },
   { href: "/router", label: "Router" },
   { href: "/benchmarks", label: "Benchmark Lab" },

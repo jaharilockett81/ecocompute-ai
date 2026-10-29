@@ -30,6 +30,17 @@ Model tiers (configurable, verified against the authenticated catalog):
 | medium | `nvidia/nemotron-3-super-120b-a12b` | 12B |
 | large (baseline) | `nvidia/Nemotron-3-Ultra-550b-a55b` | 55B |
 
+## The EcoCompute Challenge (90-second demo)
+
+Open **The Challenge** page and click **Run live** on a scenario. The same task goes down two lanes at once, both making genuine Nebius calls at temperature 0:
+
+- **EcoCompute lane:** the routing policy picks a start tier, a deterministic validator checks the answer, and if (and only if) it fails, the router escalates and re-checks against the same requirement.
+- **Baseline lane:** the same task and requirement on the fixed large model, with no escalation.
+
+The page ticks off eight things a judge should see (requirement, smaller-model selection, validator rejection, escalation, re-check, full trace, baseline, comparison), then compares quality, latency, tokens and total cost, including routing and evaluation overhead (both $0 because routing is rule-based and validation is deterministic; their local compute time is measured from the trace). It states plainly whether optimisation helped, or what the tradeoff was.
+
+Two scenarios: **Routine triage** (a small model should pass first time) and **Demanding extraction** (strict schema, time conversion and arithmetic; hard for a small model). Nothing forces a failure: if the small model passes the hard task, the page says so. Every run is stored and listed with provider request IDs and links to the raw JSON records (`/api/challenges/<id>`, `/api/workloads/<id>`). Failure handling is tested with deterministic fixtures in `backend/tests/test_challenge.py`, never in the live demo.
+
 ## Results
 
 <!-- Fill from benchmarks/results/run-<id>-nebius.json after the real run. Never paste mock numbers here. -->
@@ -40,6 +51,7 @@ _Pending: the held-out benchmark on real Nebius calls has not been run yet._ The
 
 | Page | Purpose |
 | --- | --- |
+| The Challenge | Live two-lane demo: EcoCompute vs fixed baseline on the same task, with verdict and verifiable call log |
 | Overview | Pass rate, cost per success, escalation rate, latest benchmark, where workloads finish |
 | Playground | Presets or your own task, routing preview (free), live streamed trace, result |
 | Router | Tier table, policy settings, evidence heatmap (prior vs observed vs posterior) |
@@ -61,7 +73,7 @@ cp .env.example .env            # add NEBIUS_API_KEY; leave it empty to use the 
 # backend
 cd backend
 pip install -r requirements-dev.txt
-python -m pytest -q             # 44 tests, offline
+python -m pytest -q             # 52 tests, offline
 uvicorn app.main:app --reload --port 8000
 
 # frontend (new terminal)
