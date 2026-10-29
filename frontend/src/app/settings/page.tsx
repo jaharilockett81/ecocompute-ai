@@ -43,10 +43,10 @@ export default function SettingsPage() {
   return (
     <div className="max-w-4xl">
       <PageHeader
-        eyebrow="Configuration" title="Settings" subtitle="Connection settings are stored in this browser only. Backend configuration is read-only here and set through environment variables." />
+        title="Settings" subtitle="Connection settings are stored in this browser only. Backend configuration is read-only here and set through environment variables." />
       <div className="space-y-4">
         <Card title="Connection">
-          <div className="grid gap-3 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <label className="text-sm">
               <span className="text-xs text-muted">Backend API URL</span>
               <input className="input mt-1" value={base} onChange={(e) => setBase(e.target.value)} placeholder={defaultApiBase()} />

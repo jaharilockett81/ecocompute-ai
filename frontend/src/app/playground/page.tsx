@@ -140,7 +140,6 @@ export default function Playground() {
   return (
     <div>
       <PageHeader
-        eyebrow="Single workload"
         title="Playground"
         subtitle="Run one workload through the router and watch every step live. Quality checks are deterministic: escalation happens only if the gate genuinely fails."
       />
@@ -149,7 +148,7 @@ export default function Playground() {
         error={error}
         hint={error?.includes("access code") ? <span>Enter it in <Link className="underline" href="/settings">Settings</Link>.</span> : undefined}
       />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
         <Card title="Workload">
           <div className="space-y-3 text-sm">
             <label className="block">

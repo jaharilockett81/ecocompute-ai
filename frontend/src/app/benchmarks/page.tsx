@@ -49,13 +49,12 @@ export default function BenchmarkLab() {
   return (
     <div>
       <PageHeader
-        eyebrow="EcoBench v1"
         title="Benchmark Lab"
         subtitle={`EcoBench v1: ${ds?.cases?.length ?? "…"} original tasks across 7 categories, each with a deterministic check. Calibration cases warm the router; held-out test cases measure it. Every condition runs the same cases so results are paired.`}
       />
       <ErrorBox error={error || err} hint={error ? <BackendHint /> : undefined} />
       <SampleBanner show={runs?.sample_data} />
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
         <Card title="New run">
           <div className="space-y-3 text-sm">
             <div>

@@ -1,26 +1,46 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Icon from "./Icon";
+import { useProviderStatus } from "./Nav";
 
-export function PageHeader({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
+export function ProviderPill() {
+  const st = useProviderStatus();
   return (
-    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-      <div>
-        {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
-        <h1 className="text-4xl font-light tracking-tight md:text-5xl">{title}</h1>
-        {subtitle && <p className="mt-3 max-w-3xl text-[15px] font-light leading-relaxed text-muted">{subtitle}</p>}
+    <div className="card hidden items-center gap-3 px-4 py-2.5 sm:flex">
+      <span className="inline-block h-3 w-3 rounded-full" style={{ background: st.tone }} />
+      <div className="leading-tight">
+        <div className="text-sm font-medium">{st.title}</div>
+        <div className="text-xs text-muted">{st.sub}</div>
       </div>
-      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
 }
 
-export function Card({ title, children, className = "", right }: { title?: ReactNode; children: ReactNode; className?: string; right?: ReactNode }) {
+export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
   return (
-    <section className={`card min-w-0 p-5 ${className}`}>
+    <div className="mb-7 flex flex-wrap items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h1 className="text-3xl font-semibold tracking-tight md:text-[40px] md:leading-tight">{title}</h1>
+        {subtitle && <p className="mt-1.5 max-w-3xl text-[15px] leading-relaxed text-muted">{subtitle}</p>}
+      </div>
+      <div className="flex flex-wrap items-center gap-3">
+        <ProviderPill />
+        {actions}
+      </div>
+    </div>
+  );
+}
+
+export function Card({ title, subtitle, children, className = "", right }: { title?: ReactNode; subtitle?: ReactNode; children: ReactNode; className?: string; right?: ReactNode }) {
+  return (
+    <section className={`card min-w-0 p-5 md:p-6 ${className}`}>
       {(title || right) && (
-        <div className="mb-4 flex items-center justify-between gap-2">
-          {title && <h2 className="text-base font-normal tracking-tight">{title}</h2>}
+        <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            {title && <h2 className="text-lg font-semibold tracking-tight">{title}</h2>}
+            {subtitle && <p className="mt-0.5 text-sm text-muted">{subtitle}</p>}
+          </div>
           {right}
         </div>
       )}
@@ -29,12 +49,20 @@ export function Card({ title, children, className = "", right }: { title?: React
   );
 }
 
-export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
+export function Stat({ label, value, hint, icon, iconTone = "good", extra }: { label: string; value: ReactNode; hint?: ReactNode; icon?: string; iconTone?: "good" | "info"; extra?: ReactNode }) {
   return (
-    <div className="card min-w-0 p-5">
-      <div className="text-3xl font-light tabular-nums tracking-tight md:text-4xl">{value}</div>
-      <div className="mt-2 text-sm text-fg/90">{label}</div>
-      {hint && <div className="mt-0.5 text-xs text-muted">{hint}</div>}
+    <div className="card flex min-w-0 gap-4 p-5">
+      {icon && (
+        <div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-full ${iconTone === "info" ? "bg-info-soft text-info" : "bg-accent-soft text-accent-strong"}`}>
+          <Icon name={icon} size={22} />
+        </div>
+      )}
+      <div className="min-w-0 flex-1">
+        <div className="text-2xl font-semibold tabular-nums tracking-tight">{value}</div>
+        <div className="text-sm text-muted">{label}</div>
+        {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
+        {extra}
+      </div>
     </div>
   );
 }
@@ -82,7 +110,7 @@ export function TierBadge({ tier, label }: { tier?: string | null; label?: strin
   if (!tier) return <span className="text-muted">—</span>;
   const c = tierColor(tier);
   return (
-    <span className="inline-flex items-center gap-1.5 text-xs font-medium" style={{ color: c }}>
+    <span className="inline-flex items-center gap-1.5 text-xs font-medium text-fg">
       <span className="inline-block h-2 w-2 rounded-full" style={{ background: c }} />
       {label || tier}
     </span>
@@ -133,9 +161,9 @@ export function Bars({
               {d.note && <span className="ml-2">{d.note}</span>}
             </span>
           </div>
-          <div className="h-1.5 rounded-full bg-panel-2">
+          <div className="h-2 rounded-full bg-panel-2">
             <div
-              className="h-1.5 rounded-full shadow-[0_0_10px_currentColor]"
+              className="h-2 rounded-full"
               style={{ width: `${Math.max(0, Math.min(100, ((d.value ?? 0) / m) * 100))}%`, background: d.color || color || "var(--accent)", color: d.color || color || "var(--accent)" }}
             />
           </div>

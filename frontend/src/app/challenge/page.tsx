@@ -140,7 +140,6 @@ export default function ChallengePage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Live demonstration"
         title="The EcoCompute Challenge"
         subtitle="One task, two lanes, real inference. EcoCompute routes the task to the cheapest model likely to pass an objective check and escalates only if the check fails. A fixed baseline runs the same task on the largest model. Then we compare what actually happened."
       />
@@ -150,7 +149,7 @@ export default function ChallengePage() {
         hint={error?.includes("access code") ? <span>Enter it in <Link className="underline" href="/settings">Settings</Link>.</span> : undefined}
       />
 
-      <div className="mb-4 grid gap-4 md:grid-cols-2">
+      <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
         {sc?.scenarios?.map((s: any) => (
           <Card
             key={s.id}
@@ -182,7 +181,7 @@ export default function ChallengePage() {
 
       {(started || running) && (
         <>
-          <div className="mb-4 grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
             <Card title="What a judge should see" right={activeScenario && <span className="text-xs text-muted">{activeScenario.title}</span>}>
               <ol className="space-y-1.5 text-sm">
                 {items.map(([label, st, note], i) => (
@@ -312,7 +311,7 @@ export default function ChallengePage() {
             </Card>
           </div>
 
-          <div className="mb-4 grid gap-4 lg:grid-cols-2">
+          <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card title={<span>EcoCompute lane <span className="font-normal text-muted">· routed</span></span>} right={running && <Badge tone="info">live</Badge>}>
               {lanes.ecocompute.length ? <TraceView events={lanes.ecocompute} live={!!running} /> : <p className="text-sm text-muted">Waiting…</p>}
             </Card>

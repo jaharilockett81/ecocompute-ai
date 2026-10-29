@@ -14,7 +14,6 @@ export default function WorkloadDetail() {
   return (
     <div>
       <PageHeader
-        eyebrow="Audit log"
         title="Workload"
         subtitle={w && `${when(w.created_at)} · ${w.source}${w.run_id ? ` · ${w.case_id} · ${w.condition}` : ""}`}
         actions={
@@ -33,7 +32,7 @@ export default function WorkloadDetail() {
       <SampleBanner show={w && w.provider !== "nebius"} />
       {!w && !error && <Loading />}
       {w && (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="space-y-4">
             <Card title="Summary" right={<Badge tone={statusTone(w.status)}>{w.status}</Badge>}>
               <KV

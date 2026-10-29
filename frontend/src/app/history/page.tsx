@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { ms, num, usd, when } from "@/lib/format";
-import { Badge, BackendHint, Card, ErrorBox, Loading, PageHeader, SampleBanner, statusTone, tierColor } from "@/components/ui";
+import { Badge, BackendHint, Card, ErrorBox, Loading, PageHeader, SampleBanner, statusTone, TierBadge } from "@/components/ui";
 
 const PAGE = 50;
 
@@ -17,7 +17,6 @@ export default function HistoryPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Audit log"
         title="History"
         subtitle="Every workload is recorded with its full trace, attempts, tokens, latency and cost."
         actions={
@@ -69,10 +68,10 @@ export default function HistoryPage() {
                       <td className="whitespace-nowrap text-xs">
                         {w.initial_tier && w.initial_tier !== w.final_tier && (
                           <>
-                            <span style={{ color: tierColor(w.initial_tier) }}>{w.initial_tier}</span> →{" "}
+                            <TierBadge tier={w.initial_tier} /> →{" "}
                           </>
                         )}
-                        <span style={{ color: tierColor(w.final_tier) }}>{w.final_tier || "—"}</span>
+                        <TierBadge tier={w.final_tier} />
                       </td>
                       <td className="num">{num((w.prompt_tokens || 0) + (w.completion_tokens || 0))}</td>
                       <td className="num">{ms(w.latency_ms)}</td>

@@ -3,7 +3,7 @@ export const DASH = "—";
 export function usd(v: number | null | undefined, digits = 5): string {
   if (v === null || v === undefined) return DASH;
   if (v === 0) return "$0";
-  if (Math.abs(v) < 0.00001) return `$${v.toExponential(2)}`;
+  if (Math.abs(v) < 0.0000001) return `$${v.toExponential(2)}`;
   return `$${v.toFixed(digits)}`;
 }
 

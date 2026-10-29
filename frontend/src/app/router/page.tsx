@@ -24,7 +24,6 @@ export default function RouterPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Routing policy"
         title="Router"
         subtitle="The routing policy keeps a Beta posterior over P(pass) for every (category, tier). A heuristic prior is updated with observed quality-gate outcomes, then the router picks the start tier whose whole escalation chain has the lowest expected cost while still meeting the quality target."
       />
@@ -33,9 +32,9 @@ export default function RouterPage() {
       {!data && !error && <Loading />}
 
       {cfg && (
-        <div className="mb-4 grid gap-4 lg:grid-cols-2">
+        <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
           <Card title="Model tiers">
-            <table className="data">
+            <div className="overflow-x-auto"><table className="data">
               <thead>
                 <tr>
                   <th>Tier</th>
@@ -60,7 +59,7 @@ export default function RouterPage() {
                   </tr>
                 ))}
               </tbody>
-            </table>
+            </table></div>
           </Card>
           <Card title="Policy settings">
             <KV

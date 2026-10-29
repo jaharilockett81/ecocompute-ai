@@ -14,7 +14,7 @@ export default function Methodology() {
   return (
     <div className="max-w-4xl">
       <PageHeader
-        eyebrow="How it works" title="Methodology" subtitle="How EcoCompute decides, how it checks quality, how the benchmark is run, and what the impact numbers do and do not mean." />
+        title="Methodology" subtitle="How EcoCompute decides, how it checks quality, how the benchmark is run, and what the impact numbers do and do not mean." />
       <div className="space-y-4 text-sm leading-relaxed">
         <Card title="1 · Routing policy">
           <p>

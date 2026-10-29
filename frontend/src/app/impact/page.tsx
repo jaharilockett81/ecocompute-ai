@@ -15,7 +15,6 @@ export default function ImpactPage() {
   return (
     <div>
       <PageHeader
-        eyebrow="Sustainability"
         title="Impact"
         subtitle="Three honest categories: A is what the API measures directly, B is a transparent physics-based estimate with low/central/high scenarios, and C is what cannot be observed from outside the data center."
       />
@@ -25,7 +24,7 @@ export default function ImpactPage() {
       {data && (
         <div className="space-y-4">
           <Card title="A · Directly measured">
-            <div className="grid gap-4 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <KV
                 rows={[
                   ["Calls", `${num(m.calls)} (${num(m.failed_calls)} failed)`],
@@ -52,7 +51,7 @@ export default function ImpactPage() {
           </Card>
 
           <Card title="B · Model-derived estimate">
-            <div className="grid gap-3 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
               {SCEN.map((s) => (
                 <div key={s} className={`rounded-xl p-3 ${s === "central" ? "bg-accent-soft" : "bg-panel-2"}`}>
                   <div className="text-xs uppercase tracking-wide text-muted">{s}</div>
@@ -67,7 +66,7 @@ export default function ImpactPage() {
             </p>
           </Card>
 
-          <div className="grid gap-4 lg:grid-cols-2">
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
             <Card title="C · Not observable through the API">
               <ul className="list-disc space-y-1 pl-5 text-sm">
                 {data.methodology.not_observable.map((x: string) => (

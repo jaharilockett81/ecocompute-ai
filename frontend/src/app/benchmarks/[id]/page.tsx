@@ -5,7 +5,7 @@ import { useParams } from "next/navigation";
 import { apiPost } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { ci, ms, num, pct, sci, signedCi, signedPct, usd, when } from "@/lib/format";
-import { Badge, Bars, Card, ErrorBox, Loading, PageHeader, SampleBanner, TierBadge, statusTone, tierColor } from "@/components/ui";
+import { Badge, Bars, Card, ErrorBox, Loading, PageHeader, SampleBanner, TierBadge, statusTone } from "@/components/ui";
 
 function download(name: string, data: unknown) {
   const url = URL.createObjectURL(new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }));
@@ -33,7 +33,6 @@ export default function BenchmarkRun() {
   return (
     <div>
       <PageHeader
-        eyebrow="EcoBench v1"
         title="Benchmark run"
         subtitle={run && `${when(run.created_at)} · ${run.dataset_version} · ${run.config?.split} split · provider ${run.provider}`}
         actions={
@@ -177,7 +176,7 @@ export default function BenchmarkRun() {
                 </Card>
               )}
 
-              <div className="mb-4 grid gap-4 lg:grid-cols-2">
+              <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <Card title="Pass rate by category">
                   <div className="space-y-4">
                     {Object.entries(summ.by_category || {}).map(([c, cats]: [string, any]) => (
@@ -263,10 +262,10 @@ export default function BenchmarkRun() {
                         <td className="text-xs">
                           {w.initial_tier !== w.final_tier ? (
                             <>
-                              <span style={{ color: tierColor(w.initial_tier) }}>{w.initial_tier}</span> → <span style={{ color: tierColor(w.final_tier) }}>{w.final_tier}</span>
+                              <TierBadge tier={w.initial_tier} /> → <TierBadge tier={w.final_tier} />
                             </>
                           ) : (
-                            <span style={{ color: tierColor(w.final_tier) }}>{w.final_tier}</span>
+                            <TierBadge tier={w.final_tier} />
                           )}
                         </td>
                         <td className="num">{num((w.prompt_tokens || 0) + (w.completion_tokens || 0))}</td>
