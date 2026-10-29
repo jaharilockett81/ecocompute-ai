@@ -14,6 +14,7 @@ export default function WorkloadDetail() {
   return (
     <div>
       <PageHeader
+        eyebrow="Audit log"
         title="Workload"
         subtitle={w && `${when(w.created_at)} · ${w.source}${w.run_id ? ` · ${w.case_id} · ${w.condition}` : ""}`}
         actions={
@@ -53,7 +54,7 @@ export default function WorkloadDetail() {
               <pre className="max-h-72 overflow-auto whitespace-pre-wrap text-xs">{w.task_text}</pre>
             </Card>
             <Card title="Final output">
-              <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-lg bg-panel-2 p-3 text-xs">{w.final_output || "(empty)"}</pre>
+              <pre className="max-h-96 overflow-auto whitespace-pre-wrap rounded-xl bg-panel-2 p-3 text-xs">{w.final_output || "(empty)"}</pre>
             </Card>
           </div>
           <div className="space-y-4">

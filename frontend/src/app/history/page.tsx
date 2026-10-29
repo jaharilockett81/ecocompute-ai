@@ -17,6 +17,7 @@ export default function HistoryPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Audit log"
         title="History"
         subtitle="Every workload is recorded with its full trace, attempts, tokens, latency and cost."
         actions={

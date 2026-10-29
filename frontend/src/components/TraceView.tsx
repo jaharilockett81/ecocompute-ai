@@ -155,7 +155,7 @@ export default function TraceView({ events, live }: { events: TraceEvent[]; live
           <button className="text-xs text-muted underline" onClick={() => setRaw(!raw)}>
             {raw ? "Hide" : "Show"} machine-readable trace
           </button>
-          {raw && <pre className="mt-2 max-h-96 overflow-auto rounded-lg bg-panel-2 p-3 text-xs">{JSON.stringify(events, null, 2)}</pre>}
+          {raw && <pre className="mt-2 max-h-96 overflow-auto rounded-xl bg-panel-2 p-3 text-xs">{JSON.stringify(events, null, 2)}</pre>}
         </div>
       )}
     </div>

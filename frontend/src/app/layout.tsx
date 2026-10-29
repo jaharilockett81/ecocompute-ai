@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Outfit } from "next/font/google";
 import Nav from "@/components/Nav";
 import "./globals.css";
 
-const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const outfit = Outfit({ variable: "--font-outfit", subsets: ["latin"], weight: ["200", "300", "400", "500", "600"] });
 const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -14,9 +14,12 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${outfit.variable} ${geistMono.variable} antialiased`}>
         <Nav />
-        <main className="mx-auto max-w-6xl px-4 py-6 md:ml-56 md:px-8 lg:mx-0 lg:ml-56">{children}</main>
+        <main className="mx-auto max-w-7xl px-4 pb-16 pt-8 md:px-8">{children}</main>
+        <footer className="mx-auto max-w-7xl border-t border-border px-4 py-8 text-xs text-muted md:px-8">
+          EcoCompute AI · NVIDIA Nemotron on Nebius Token Factory · MIT licensed
+        </footer>
       </body>
     </html>
   );

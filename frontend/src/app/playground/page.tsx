@@ -140,6 +140,7 @@ export default function Playground() {
   return (
     <div>
       <PageHeader
+        eyebrow="Single workload"
         title="Playground"
         subtitle="Run one workload through the router and watch every step live. Quality checks are deterministic: escalation happens only if the gate genuinely fails."
       />
@@ -234,7 +235,7 @@ export default function Playground() {
               </label>
             </div>
 
-            <details className="rounded-lg border border-border p-3" open={!!(form.json_schema || form.required_terms || form.max_words || form.exact_answer)}>
+            <details className="rounded-xl border border-border p-3" open={!!(form.json_schema || form.required_terms || form.max_words || form.exact_answer)}>
               <summary className="cursor-pointer text-xs font-medium">Quality gate checks</summary>
               <div className="mt-3 space-y-3">
                 {form.output_format === "json" && (
@@ -330,7 +331,7 @@ export default function Playground() {
                   ["Evaluated by", result.eval_method || "—"],
                 ]}
               />
-              <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-lg bg-panel-2 p-3 text-xs">{result.final_output || "(empty)"}</pre>
+              <pre className="mt-3 max-h-80 overflow-auto whitespace-pre-wrap rounded-xl bg-panel-2 p-3 text-xs">{result.final_output || "(empty)"}</pre>
             </Card>
           )}
         </div>

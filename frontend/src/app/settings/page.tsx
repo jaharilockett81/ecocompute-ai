@@ -42,7 +42,8 @@ export default function SettingsPage() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Settings" subtitle="Connection settings are stored in this browser only. Backend configuration is read-only here and set through environment variables." />
+      <PageHeader
+        eyebrow="Configuration" title="Settings" subtitle="Connection settings are stored in this browser only. Backend configuration is read-only here and set through environment variables." />
       <div className="space-y-4">
         <Card title="Connection">
           <div className="grid gap-3 md:grid-cols-2">

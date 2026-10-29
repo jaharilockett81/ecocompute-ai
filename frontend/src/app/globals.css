@@ -1,55 +1,41 @@
 @import "tailwindcss";
 
+/* Dark, nature-tech theme: deep green-black surfaces, one bright green accent. */
 :root {
-  --bg: #f6f7f5;
-  --panel: #ffffff;
-  --panel-2: #f0f2ee;
-  --border: #dfe3dc;
-  --fg: #16201a;
-  --muted: #5d6b62;
-  --accent: #1f8a4c;
-  --accent-soft: #e3f3e8;
-  --warn: #b7791f;
-  --warn-soft: #fdf3e1;
-  --bad: #c0392b;
-  --bad-soft: #fbe9e7;
-  --info: #2b6cb0;
-  --info-soft: #e6f0fa;
-  --t-small: #2f9e63;
-  --t-medium: #3b82c4;
-  --t-large: #8b5cf6;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0e1411;
-    --panel: #151d18;
-    --panel-2: #1b2520;
-    --border: #2a3630;
-    --fg: #e6ede8;
-    --muted: #93a39a;
-    --accent: #3fbf74;
-    --accent-soft: #173323;
-    --warn: #e0a84a;
-    --warn-soft: #3a2c13;
-    --bad: #ef6b5e;
-    --bad-soft: #3b1a17;
-    --info: #6aa8e8;
-    --info-soft: #172a3d;
-    --t-small: #3fbf74;
-    --t-medium: #6aa8e8;
-    --t-large: #a78bfa;
-  }
+  color-scheme: dark;
+  --bg: #050c08;
+  --bg-2: #08140d;
+  --panel: rgba(18, 38, 26, 0.55);
+  --panel-solid: #0c1a12;
+  --panel-2: rgba(255, 255, 255, 0.04);
+  --border: rgba(160, 255, 200, 0.10);
+  --border-strong: rgba(160, 255, 200, 0.22);
+  --fg: #e9f5ee;
+  --muted: #8fa89a;
+  --accent: #2fe07a;
+  --accent-ink: #03200f;
+  --accent-soft: rgba(47, 224, 122, 0.12);
+  --warn: #f2c14e;
+  --warn-soft: rgba(242, 193, 78, 0.12);
+  --bad: #ff7a6b;
+  --bad-soft: rgba(255, 122, 107, 0.12);
+  --info: #6cc8ff;
+  --info-soft: rgba(108, 200, 255, 0.12);
+  --t-small: #2fe07a;
+  --t-medium: #4fd1c5;
+  --t-large: #b9a7ff;
 }
 
 @theme inline {
   --color-bg: var(--bg);
   --color-panel: var(--panel);
+  --color-panel-solid: var(--panel-solid);
   --color-panel-2: var(--panel-2);
   --color-border: var(--border);
   --color-fg: var(--fg);
   --color-muted: var(--muted);
   --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
   --color-accent-soft: var(--accent-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
@@ -57,52 +43,146 @@
   --color-bad-soft: var(--bad-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);
-  --font-sans: var(--font-geist-sans);
+  --font-sans: var(--font-outfit);
   --font-mono: var(--font-geist-mono);
 }
 
-body {
+html {
   background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
   color: var(--fg);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family: var(--font-outfit), system-ui, sans-serif;
+  background:
+    radial-gradient(1100px 600px at 75% -10%, rgba(47, 224, 122, 0.16), transparent 60%),
+    radial-gradient(900px 500px at -10% 30%, rgba(20, 120, 70, 0.18), transparent 60%),
+    linear-gradient(180deg, var(--bg-2), var(--bg) 40%);
+  background-attachment: fixed;
+}
+
+::selection {
+  background: rgba(47, 224, 122, 0.3);
+}
+
+code,
+pre {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 .card {
   background: var(--panel);
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: 18px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: border-color 0.2s ease;
+}
+.card:hover {
+  border-color: var(--border-strong);
 }
 
 .input {
-  background: var(--panel);
+  background: rgba(0, 0, 0, 0.35);
   border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 10px;
+  border-radius: 12px;
+  padding: 8px 12px;
   width: 100%;
   font-size: 14px;
+  color: var(--fg);
 }
 .input:focus {
-  outline: 2px solid var(--accent);
-  outline-offset: -1px;
+  outline: 1px solid var(--accent);
+  outline-offset: 0;
+  border-color: var(--accent);
+}
+select.input option {
+  background: var(--panel-solid);
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  border-radius: 8px;
-  padding: 7px 14px;
+  gap: 8px;
+  border-radius: 999px;
+  padding: 8px 18px;
   font-size: 14px;
   font-weight: 500;
-  border: 1px solid var(--border);
-  background: var(--panel);
+  border: 1px solid var(--border-strong);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--fg);
+  transition: background 0.15s ease, transform 0.15s ease, border-color 0.15s ease;
 }
-.btn:hover { background: var(--panel-2); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-.btn-primary:hover { filter: brightness(1.08); background: var(--accent); }
+.btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(160, 255, 200, 0.35);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 0 24px rgba(47, 224, 122, 0.25);
+}
+.btn-primary:hover {
+  background: #5cf09a;
+  border-color: #5cf09a;
+}
 
-table.data { width: 100%; font-size: 13px; border-collapse: collapse; }
-table.data th { text-align: left; font-weight: 500; color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--border); white-space: nowrap; }
-table.data td { padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
-table.data td.num, table.data th.num { text-align: right; font-variant-numeric: tabular-nums; }
+.eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+table.data {
+  width: 100%;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+table.data th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--muted);
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+table.data td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+table.data tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+table.data td.num,
+table.data th.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="checkbox"] {
+  accent-color: var(--accent);
+}
+
+details > summary {
+  list-style: none;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+details > summary::before {
+  content: "+ ";
+  color: var(--accent);
+}
+details[open] > summary::before {
+  content: "− ";
+}

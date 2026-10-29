@@ -33,6 +33,7 @@ export default function BenchmarkRun() {
   return (
     <div>
       <PageHeader
+        eyebrow="EcoBench v1"
         title="Benchmark run"
         subtitle={run && `${when(run.created_at)} · ${run.dataset_version} · ${run.config?.split} split · provider ${run.provider}`}
         actions={

@@ -15,6 +15,7 @@ export default function ImpactPage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Sustainability"
         title="Impact"
         subtitle="Three honest categories: A is what the API measures directly, B is a transparent physics-based estimate with low/central/high scenarios, and C is what cannot be observed from outside the data center."
       />
@@ -53,7 +54,7 @@ export default function ImpactPage() {
           <Card title="B · Model-derived estimate">
             <div className="grid gap-3 md:grid-cols-3">
               {SCEN.map((s) => (
-                <div key={s} className={`rounded-lg p-3 ${s === "central" ? "bg-accent-soft" : "bg-panel-2"}`}>
+                <div key={s} className={`rounded-xl p-3 ${s === "central" ? "bg-accent-soft" : "bg-panel-2"}`}>
                   <div className="text-xs uppercase tracking-wide text-muted">{s}</div>
                   <div className="mt-1 text-lg font-semibold tabular-nums">{sci(e.scenarios[s]?.energy_wh, "Wh")}</div>
                   <div className="text-sm tabular-nums">{sci(e.scenarios[s]?.co2e_g, "g CO₂e")}</div>

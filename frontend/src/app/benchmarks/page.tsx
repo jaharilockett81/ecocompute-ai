@@ -49,6 +49,7 @@ export default function BenchmarkLab() {
   return (
     <div>
       <PageHeader
+        eyebrow="EcoBench v1"
         title="Benchmark Lab"
         subtitle={`EcoBench v1: ${ds?.cases?.length ?? "…"} original tasks across 7 categories, each with a deterministic check. Calibration cases warm the router; held-out test cases measure it. Every condition runs the same cases so results are paired.`}
       />

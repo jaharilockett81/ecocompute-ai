@@ -4,7 +4,7 @@ import { useApi } from "@/lib/useApi";
 import { Card, PageHeader } from "@/components/ui";
 
 function Eq({ children }: { children: React.ReactNode }) {
-  return <pre className="my-2 overflow-x-auto rounded-lg bg-panel-2 p-3 font-mono text-xs">{children}</pre>;
+  return <pre className="my-2 overflow-x-auto rounded-xl bg-panel-2 p-3 font-mono text-xs">{children}</pre>;
 }
 
 export default function Methodology() {
@@ -13,7 +13,8 @@ export default function Methodology() {
 
   return (
     <div className="max-w-4xl">
-      <PageHeader title="Methodology" subtitle="How EcoCompute decides, how it checks quality, how the benchmark is run, and what the impact numbers do and do not mean." />
+      <PageHeader
+        eyebrow="How it works" title="Methodology" subtitle="How EcoCompute decides, how it checks quality, how the benchmark is run, and what the impact numbers do and do not mean." />
       <div className="space-y-4 text-sm leading-relaxed">
         <Card title="1 · Routing policy">
           <p>

@@ -2,24 +2,25 @@
 
 import type { ReactNode } from "react";
 
-export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: ReactNode; actions?: ReactNode }) {
+export function PageHeader({ title, subtitle, actions, eyebrow }: { title: string; subtitle?: ReactNode; actions?: ReactNode; eyebrow?: string }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-        {subtitle && <p className="mt-1 max-w-3xl text-sm text-muted">{subtitle}</p>}
+        {eyebrow && <div className="eyebrow mb-2">{eyebrow}</div>}
+        <h1 className="text-4xl font-light tracking-tight md:text-5xl">{title}</h1>
+        {subtitle && <p className="mt-3 max-w-3xl text-[15px] font-light leading-relaxed text-muted">{subtitle}</p>}
       </div>
-      {actions && <div className="flex gap-2">{actions}</div>}
+      {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
   );
 }
 
 export function Card({ title, children, className = "", right }: { title?: ReactNode; children: ReactNode; className?: string; right?: ReactNode }) {
   return (
-    <section className={`card min-w-0 p-4 ${className}`}>
+    <section className={`card min-w-0 p-5 ${className}`}>
       {(title || right) && (
-        <div className="mb-3 flex items-center justify-between gap-2">
-          {title && <h2 className="text-sm font-semibold">{title}</h2>}
+        <div className="mb-4 flex items-center justify-between gap-2">
+          {title && <h2 className="text-base font-normal tracking-tight">{title}</h2>}
           {right}
         </div>
       )}
@@ -30,10 +31,10 @@ export function Card({ title, children, className = "", right }: { title?: React
 
 export function Stat({ label, value, hint }: { label: string; value: ReactNode; hint?: ReactNode }) {
   return (
-    <div className="card min-w-0 p-4">
-      <div className="text-xs uppercase tracking-wide text-muted">{label}</div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
-      {hint && <div className="mt-1 text-xs text-muted">{hint}</div>}
+    <div className="card min-w-0 p-5">
+      <div className="text-3xl font-light tabular-nums tracking-tight md:text-4xl">{value}</div>
+      <div className="mt-2 text-sm text-fg/90">{label}</div>
+      {hint && <div className="mt-0.5 text-xs text-muted">{hint}</div>}
     </div>
   );
 }
@@ -91,7 +92,7 @@ export function TierBadge({ tier, label }: { tier?: string | null; label?: strin
 export function ErrorBox({ error, hint }: { error: string | null | undefined; hint?: ReactNode }) {
   if (!error) return null;
   return (
-    <div className="mb-4 rounded-lg border border-bad/40 bg-bad-soft p-3 text-sm text-bad">
+    <div className="mb-4 rounded-2xl border border-bad/30 bg-bad-soft p-4 text-sm text-bad">
       <div className="font-medium">{error}</div>
       {hint && <div className="mt-1 text-fg/80">{hint}</div>}
     </div>
@@ -101,7 +102,7 @@ export function ErrorBox({ error, hint }: { error: string | null | undefined; hi
 export function SampleBanner({ show }: { show?: boolean }) {
   if (!show) return null;
   return (
-    <div className="mb-4 rounded-lg border border-warn/40 bg-warn-soft p-3 text-sm text-warn">
+    <div className="mb-6 rounded-2xl border border-warn/25 bg-warn-soft px-4 py-3 text-sm text-warn">
       <strong>Sample data.</strong> The backend is running the offline mock provider, so these numbers are placeholders, not
       measurements from Nebius. Configure <code>NEBIUS_API_KEY</code> on the backend to see real results.
     </div>
@@ -132,10 +133,10 @@ export function Bars({
               {d.note && <span className="ml-2">{d.note}</span>}
             </span>
           </div>
-          <div className="h-2 rounded-full bg-panel-2">
+          <div className="h-1.5 rounded-full bg-panel-2">
             <div
-              className="h-2 rounded-full"
-              style={{ width: `${Math.max(0, Math.min(100, ((d.value ?? 0) / m) * 100))}%`, background: d.color || color || "var(--accent)" }}
+              className="h-1.5 rounded-full shadow-[0_0_10px_currentColor]"
+              style={{ width: `${Math.max(0, Math.min(100, ((d.value ?? 0) / m) * 100))}%`, background: d.color || color || "var(--accent)", color: d.color || color || "var(--accent)" }}
             />
           </div>
         </div>

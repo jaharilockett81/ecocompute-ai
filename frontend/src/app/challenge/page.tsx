@@ -140,6 +140,7 @@ export default function ChallengePage() {
   return (
     <div>
       <PageHeader
+        eyebrow="Live demonstration"
         title="The EcoCompute Challenge"
         subtitle="One task, two lanes, real inference. EcoCompute routes the task to the cheapest model likely to pass an objective check and escalates only if the check fails. A fixed baseline runs the same task on the largest model. Then we compare what actually happened."
       />
@@ -201,7 +202,7 @@ export default function ChallengePage() {
                 <p className="text-sm text-muted">{running ? "Both lanes are running…" : "No result."}</p>
               ) : (
                 <div className="space-y-3">
-                  <div className={`rounded-lg p-3 text-sm font-medium ${cmp.improved ? "bg-accent-soft text-accent" : "bg-warn-soft text-warn"}`}>{cmp.verdict}</div>
+                  <div className={`rounded-xl p-3 text-sm font-medium ${cmp.improved ? "bg-accent-soft text-accent" : "bg-warn-soft text-warn"}`}>{cmp.verdict}</div>
                   <p className="text-sm">{cmp.what_happened}</p>
                   <div className="overflow-x-auto">
                     <table className="data">
