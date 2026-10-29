@@ -119,3 +119,22 @@ def test_scenario_answers_pass_their_own_validators(sid):
     from app.evaluation.validators import evaluate
     ok = {"routine": ROUTINE_OK, "demanding": DEMANDING_OK}[sid]
     assert evaluate(ok, SCENARIO_MAP[sid]["checks"]).passed
+
+
+async def test_bundles_round_trip_and_skip_other_providers(settings, store, tmp_path):
+    from app.persistence.bundles import export_bundle, import_dir
+    from app.persistence.store import Store
+
+    router, _ = _router(settings, store, {0: DEMANDING_BAD, 1: DEMANDING_OK, 2: DEMANDING_OK})
+    c = await run_challenge(settings, router, store, "demanding")
+    (tmp_path / "b").mkdir()
+    (tmp_path / "b" / "c.json").write_text(json.dumps(export_bundle(store, "challenge", c["id"]), default=str))
+
+    fresh = Store(str(tmp_path / "fresh.db"))
+    assert import_dir(fresh, tmp_path / "b") == 0  # default: real provider only
+    assert import_dir(fresh, tmp_path / "b", only_provider="fixture") == 1
+    assert import_dir(fresh, tmp_path / "b", only_provider="fixture") == 0  # idempotent
+    got = fresh.get_challenge(c["id"])
+    assert got["comparison"]["lanes"]["ecocompute"]["outcome"] == "escalated_then_passed"
+    w = fresh.get_workload(got["ecocompute_workload_id"])
+    assert len(w["attempts"]) == 2 and w["trace"][0]["step"] == "start"

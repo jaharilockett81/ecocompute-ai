@@ -8,6 +8,7 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 
 COPY backend/app backend/app
 COPY benchmarks/datasets benchmarks/datasets
+COPY benchmarks/results benchmarks/results
 COPY scripts scripts
 
 # SQLite lives here; mount a persistent disk at /srv/data to keep history across restarts.

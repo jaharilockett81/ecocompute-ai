@@ -325,7 +325,7 @@ export default function ChallengePage() {
               title="Verify it yourself"
               className="mb-4"
               right={
-                <button className="btn" onClick={() => download(`ecocompute-challenge-${result.id}.json`, result)}>
+                <button className="btn" onClick={async () => download(`challenge-${result.id}-${cmp.provider}.json`, await apiGet(`/api/bundles/challenge/${result.id}`))}>
                   Export JSON
                 </button>
               }

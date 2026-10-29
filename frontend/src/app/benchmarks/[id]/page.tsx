@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { apiPost } from "@/lib/api";
+import { apiGet, apiPost } from "@/lib/api";
 import { useApi } from "@/lib/useApi";
 import { ci, ms, num, pct, sci, signedCi, signedPct, usd, when } from "@/lib/format";
 import { Badge, Bars, Card, ErrorBox, Loading, PageHeader, SampleBanner, TierBadge, statusTone } from "@/components/ui";
@@ -46,7 +46,7 @@ export default function BenchmarkRun() {
               </button>
             )}
             {run && !active && (
-              <button className="btn" onClick={() => download(`ecobench-run-${id}-${run.provider}.json`, { run, workloads: wls?.items, impact })}>
+              <button className="btn" onClick={async () => download(`run-${id}-${run.provider}.json`, await apiGet(`/api/bundles/benchmark/${id}`))}>
                 Export JSON
               </button>
             )}

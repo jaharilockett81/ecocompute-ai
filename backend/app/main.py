@@ -17,6 +17,8 @@ from app.benchmark.runner import BenchmarkRunner, load_dataset
 from app.challenge import SCENARIO_MAP, public_scenarios, run_challenge
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger
+from app.core.config import ROOT
+from app.persistence.bundles import export_bundle, import_dir
 from app.persistence.store import Store
 from app.providers.base import ProviderError
 from app.providers.factory import build_provider
@@ -47,6 +49,11 @@ def init_state(settings: Settings, provider=None) -> None:
     state.settings = settings
     state.store = Store(settings.database_path)
     state.store.mark_interrupted_runs()
+    # Reload committed real-provider results (hosts without a persistent disk lose the DB on restart).
+    if settings.provider == "nebius":
+        n = import_dir(state.store, ROOT / "benchmarks" / "results")
+        if n:
+            log.info("imported result bundles", extra={"data": {"count": n}})
     state.provider = provider or build_provider(settings)
     state.router = EcoComputeRouter(settings, state.provider, state.store)
     state.bench = BenchmarkRunner(settings, state.router, state.store)
@@ -343,6 +350,17 @@ async def get_challenge(cid: str):
     if not c:
         raise HTTPException(404, "challenge not found")
     return c
+
+
+@app.get("/api/bundles/{kind}/{rid}")
+async def get_bundle(kind: str, rid: str):
+    """Portable export of a benchmark run or challenge with full workload records (commit to benchmarks/results/)."""
+    if kind not in ("benchmark", "challenge"):
+        raise HTTPException(404, "unknown kind")
+    try:
+        return export_bundle(state.store, kind, rid)
+    except KeyError:
+        raise HTTPException(404, f"{kind} not found")
 
 
 # ------------------------------------------------------------------ analytics

@@ -21,6 +21,7 @@ from pathlib import Path
 from app.benchmark.metrics import by_category, compare, condition_summary
 from app.core.config import ROOT, Settings
 from app.core.logging import get_logger
+from app.persistence.bundles import export_bundle
 from app.persistence.store import Store
 from app.router.engine import EcoComputeRouter, WorkloadSpec
 
@@ -185,9 +186,7 @@ class BenchmarkRunner:
         try:
             out_dir = results_dir()
             out_dir.mkdir(parents=True, exist_ok=True)
-            run = self.store.get_run(rid)
-            rows = self.store.workloads_for_run(rid)
-            payload = {"run": run, "workloads": rows}
-            (out_dir / f"run-{rid}-{run['provider']}.json").write_text(json.dumps(payload, indent=2, default=str))
+            payload = export_bundle(self.store, "benchmark", rid)
+            (out_dir / f"run-{rid}-{payload['record']['provider']}.json").write_text(json.dumps(payload, indent=2, default=str))
         except Exception:  # pragma: no cover
             log.exception("could not export benchmark results")

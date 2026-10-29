@@ -17,11 +17,14 @@ and is not influenced by earlier playground traffic.
 from __future__ import annotations
 
 import asyncio
+import json
 import time
 from typing import Awaitable, Callable
 
 from app.api.presets import PRESETS
 from app.core.config import Settings
+from app.benchmark.runner import results_dir
+from app.persistence.bundles import export_bundle
 from app.persistence.store import Store
 from app.router.engine import EcoComputeRouter, WorkloadSpec
 from app.schemas.api import WorkloadRequest
@@ -251,4 +254,10 @@ async def run_challenge(settings: Settings, router: EcoComputeRouter, store: Sto
     }
     store.update_challenge(cid, status="completed", finished_at=time.time(), ecocompute_workload_id=eco["workload_id"],
                            baseline_workload_id=base["workload_id"], comparison_json=comparison)
+    try:
+        out = results_dir()
+        out.mkdir(parents=True, exist_ok=True)
+        (out / f"challenge-{cid}-{provider}.json").write_text(json.dumps(export_bundle(store, "challenge", cid), indent=2, default=str))
+    except Exception:  # export is a convenience; the DB record is authoritative
+        pass
     return store.get_challenge(cid)
