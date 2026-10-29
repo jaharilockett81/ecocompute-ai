@@ -83,6 +83,8 @@ npm install
 npm run dev                     # http://localhost:3000
 ```
 
+Run the Challenge from the terminal (also shows up in the UI): `python scripts/run_challenge.py routine` or `demanding`.
+
 Verify a real Nebius call and the configured model IDs:
 
 ```bash
