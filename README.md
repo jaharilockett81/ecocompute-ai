@@ -118,7 +118,7 @@ All configuration is environment variables; see [`.env.example`](.env.example). 
 
 ## Deploy
 
-- **Backend:** `backend/Dockerfile` (build context = repo root). `render.yaml` is a ready Render Blueprint with a persistent disk for SQLite; set `NEBIUS_API_KEY`, `ECOCOMPUTE_DEMO_ACCESS_CODE` and `ECOCOMPUTE_CORS_ORIGINS` in the dashboard.
+- **Backend:** `backend/Dockerfile` (build context = repo root). `render.yaml` is a ready Render Blueprint on the free plan (history resets when the instance restarts; add a disk on a paid plan to keep it); set `NEBIUS_API_KEY`, `ECOCOMPUTE_DEMO_ACCESS_CODE` and `ECOCOMPUTE_CORS_ORIGINS` in the dashboard.
 - **Frontend:** Vercel, root directory `frontend`, env `NEXT_PUBLIC_API_URL=<backend URL>`.
 
 ## Repository layout

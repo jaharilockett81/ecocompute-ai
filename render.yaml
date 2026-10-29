@@ -6,11 +6,9 @@ services:
     dockerfilePath: backend/Dockerfile
     dockerContext: .
     healthCheckPath: /health
-    plan: starter
-    disk:
-      name: ecocompute-data
-      mountPath: /srv/data
-      sizeGB: 1
+    # Free plan: no persistent disk, so the SQLite history resets when the instance restarts or sleeps.
+    # For persistent history, switch to `plan: starter` and add a disk mounted at /srv/data.
+    plan: free
     envVars:
       - key: NEBIUS_API_KEY
         sync: false
