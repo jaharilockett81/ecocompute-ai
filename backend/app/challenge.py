@@ -11,6 +11,11 @@ task: one is routine, one is genuinely demanding for a small model. Whether
 escalation happens is decided by the validator on the actual output, and the
 outcome is reported as observed.
 
+One scenario is an explicit safety drill: the first real answer in the
+EcoCompute lane is corrupted on purpose (labelled "injected" everywhere) so a
+judge can watch the gate reject a known-bad candidate on live traffic. A drill
+makes no performance claim.
+
 Routing uses the prior only (evidence_override={}) so a run is reproducible
 and is not influenced by earlier playground traffic.
 """
@@ -76,6 +81,16 @@ SCENARIOS: list[dict] = [
                           expected_fields=_STRICT["expected_fields"]),
     },
 ]
+_ROUTINE = SCENARIOS[0]
+SCENARIOS.append({
+    **{k: _ROUTINE[k] for k in ("task", "category", "output_format", "quality_threshold", "checks", "requirement")},
+    "id": "fault_drill",
+    "title": "Safety drill: injected bad candidate",
+    "kind": "safety_drill",
+    "fault_injection": "corrupt_candidate",
+    "blurb": "The routine task again, but EcoCompute deliberately corrupts the small model's real answer before the gate. "
+             "The gate must reject it and the router must recover. Labelled as injected; not a performance comparison.",
+})
 SCENARIO_MAP = {s["id"]: s for s in SCENARIOS}
 
 
@@ -94,9 +109,14 @@ def _lane_metrics(w: dict, wall_ms: float) -> dict:
     if start_ts and select_ts:
         routing_ms = (select_ts - start_ts) * 1000
     last_infer_ts = None
+    injected: list[dict] = []
     for e in trace:
         d = e.get("data") or {}
-        if e["step"] == "infer" and e["status"] in ("done", "failed"):
+        if e["step"] == "inject":
+            injected.append({k: v for k, v in d.items() if k != "injected"})
+            if calls:
+                calls[-1]["injected"] = True
+        elif e["step"] == "infer" and e["status"] in ("done", "failed"):
             last_infer_ts = e["ts"]
             calls.append({k: d.get(k) for k in ("tier", "model", "provider", "ok", "prompt_tokens", "completion_tokens",
                                                 "reasoning_tokens", "latency_ms", "cost_usd", "finish_reason", "request_id", "error")})
@@ -104,11 +124,12 @@ def _lane_metrics(w: dict, wall_ms: float) -> dict:
             if last_infer_ts:
                 eval_ms += (e["ts"] - last_infer_ts) * 1000
             evaluations.append({"tier": calls[-1]["tier"] if calls else None, "passed": d.get("passed"),
-                                "method": d.get("method"), "detail": e.get("detail")})
+                                "method": d.get("method"), "detail": e.get("detail"), "injected": bool(d.get("injected"))})
             if calls:
                 calls[-1]["validator_passed"] = d.get("passed")
     attempts = w.get("attempts") or []
     overhead_calls = [a for a in attempts if a.get("role") in ("judge", "router")]
+    approved = any(e["step"] == "approve" and (e.get("data") or {}).get("approved") for e in trace)
     total_cost = w.get("cost_usd")
     overhead_cost = w.get("overhead_cost_usd") or 0.0
     esc = w.get("escalations") or 0
@@ -119,12 +140,18 @@ def _lane_metrics(w: dict, wall_ms: float) -> dict:
         outcome = "failed_no_escalation" if esc == 0 else "escalated_still_failed"
     else:
         outcome = status
+    if injected:
+        rejected = bool(evaluations) and evaluations[0]["passed"] is False
+        outcome = ("injected_fault_rejected_then_passed" if rejected and status == "passed" else
+                   "injected_fault_rejected" if rejected else "gate_defect_injected_fault_accepted")
     tokens = (w.get("prompt_tokens") or 0) + (w.get("completion_tokens") or 0)
     return {
         "workload_id": w["id"],
         "status": status,
         "passed": status == "passed",
         "outcome": outcome,
+        "approved": approved,
+        "injected_faults": injected,
         "initial_tier": w.get("initial_tier"),
         "final_tier": w.get("final_tier"),
         "final_model": w.get("final_model"),
@@ -193,6 +220,15 @@ def compare(eco: dict, base: dict) -> dict:
 def what_happened(eco: dict, scenario: dict, labels: dict[str, str]) -> str:
     start, final = labels.get(eco["initial_tier"], eco["initial_tier"]), labels.get(eco["final_tier"], eco["final_tier"])
     o = eco["outcome"]
+    if o.startswith("injected_fault") or o.startswith("gate_defect"):
+        f = (eco["injected_faults"] or [{}])[0]
+        how = f"set {f['path']} to {f['injected_value']!r}" if f.get("mutation") == "field_value" else "replaced the answer"
+        if o == "injected_fault_rejected_then_passed":
+            return (f"Safety drill: {start} answered for real, then EcoCompute deliberately {how} (labelled INJECTED). "
+                    f"The validator rejected it, the router escalated, and {final}'s real answer passed the same requirement and was approved.")
+        if o == "injected_fault_rejected":
+            return f"Safety drill: the injected candidate ({how}) was rejected, but no later answer passed, so nothing was approved."
+        return "Safety drill FAILED: the validator accepted a deliberately corrupted answer. It was withheld; this is a gate defect."
     if o == "first_attempt_pass":
         s = f"The router started on {start} and its first answer passed the validator, so no escalation was needed."
         if scenario["kind"] == "escalation_prone":
@@ -216,11 +252,12 @@ async def run_challenge(settings: Settings, router: EcoComputeRouter, store: Sto
     if emit:
         await emit({"lane": None, "step": "challenge", "challenge_id": cid, "scenario_id": scenario_id, "provider": provider})
 
+    drill = sc.get("fault_injection")
     common = dict(task=sc["task"], category=sc["category"], output_format=sc["output_format"], checks=sc["checks"],
                   quality_threshold=sc["quality_threshold"], max_escalations=2, repair_attempts=0,
                   source="challenge", run_id=cid, case_id=scenario_id, evidence_override={})
     specs = {
-        "ecocompute": WorkloadSpec(**common, allow_escalation=True, condition="ecocompute"),
+        "ecocompute": WorkloadSpec(**common, allow_escalation=True, condition="ecocompute", fault_injection=drill),
         "baseline": WorkloadSpec(**common, allow_escalation=False, forced_tier=settings.baseline_tier, condition=f"fixed:{settings.baseline_tier}"),
     }
 
@@ -252,6 +289,11 @@ async def run_challenge(settings: Settings, router: EcoComputeRouter, store: Sto
         "what_happened": what_happened(eco, sc, labels),
         **compare(eco, base),
     }
+    if drill:
+        comparison.update(improved=None, safety_drill=True,
+                          verdict="Safety drill, not a performance comparison: the extra escalation was caused by the injected fault. "
+                                  + ("The gate rejected it and the run recovered." if eco["outcome"] == "injected_fault_rejected_then_passed"
+                                     else "See what happened."))
     store.update_challenge(cid, status="completed", finished_at=time.time(), ecocompute_workload_id=eco["workload_id"],
                            baseline_workload_id=base["workload_id"], comparison_json=comparison)
     try:

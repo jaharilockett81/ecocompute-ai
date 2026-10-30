@@ -16,6 +16,15 @@ const OUTCOME_LABEL: Record<string, string> = {
   escalated_then_passed: "Escalated, then passed",
   escalated_still_failed: "Escalated, still failed",
   failed_no_escalation: "Failed (no escalation left)",
+  injected_fault_rejected_then_passed: "Injected fault rejected, recovered",
+  injected_fault_rejected: "Injected fault rejected, no recovery",
+  gate_defect_injected_fault_accepted: "GATE DEFECT: injected fault accepted",
+};
+
+const KIND_BADGE: Record<string, [string, string]> = {
+  first_attempt: ["routine", "good"],
+  escalation_prone: ["escalation-prone", "warn"],
+  safety_drill: ["injected fault", "bad"],
 };
 
 function download(name: string, data: unknown) {
@@ -36,14 +45,17 @@ function checklist(eco: TraceEvent[], base: TraceEvent[], started: boolean, resu
   const ecoDone = eco.some((e) => e.step === "final" && e.data?.status);
   const baseDone = base.some((e) => e.step === "final" && e.data?.status);
   const firstPassed = evals[0]?.status === "done";
+  const injected = eco.find((e) => e.step === "inject");
+  const approved = eco.find((e) => e.step === "approve");
   const startTier = sel?.data?.start_tier;
   const smaller = startTier != null && (tierRank[startTier] ?? 99) < (tierRank[baselineTier] ?? -1);
   const items: [string, StepState, string][] = [
     ["Task submitted with a defined quality requirement", started ? "done" : "pending", ""],
     ["Routing policy selects a smaller model", !sel ? "pending" : smaller ? "done" : "failed", sel ? `started on ${startTier}` : ""],
-    ["Validator detects an inadequate result", failedEval ? "done" : firstPassed ? "skipped" : "pending", failedEval ? failedEval.detail?.slice(0, 90) || "" : firstPassed ? "not needed: first answer passed" : ""],
+    [injected ? "Validator rejects the deliberately injected bad candidate" : "Validator detects an inadequate result", failedEval ? "done" : firstPassed ? "skipped" : "pending", failedEval ? failedEval.detail?.slice(0, 90) || "" : firstPassed ? "not needed: first answer passed" : ""],
     ["Automatic escalation to a more capable model", escalated ? "done" : firstPassed || (ecoDone && !escalated) ? "skipped" : "pending", escalated ? "" : firstPassed ? "not needed" : ""],
     ["Final answer checked against the same requirement", ecoDone && evals.length ? (evals[evals.length - 1].status === "done" ? "done" : "failed") : "pending", ecoDone && evals.length ? (evals[evals.length - 1].status === "done" ? "passed" : "did not pass") : ""],
+    ["Only a verified answer is approved for release", approved ? "done" : ecoDone ? "failed" : "pending", approved ? approved.detail || "" : ecoDone ? "nothing approved" : ""],
     ["Complete decision trace displayed", ecoDone ? "done" : "pending", ""],
     ["Fixed-model baseline runs the same workload", baseDone ? "done" : base.length ? "pending" : "pending", baseDone ? `on ${baselineTier}` : ""],
     ["Quality, latency, tokens and cost compared", result ? "done" : "pending", ""],
@@ -149,12 +161,12 @@ export default function ChallengePage() {
         hint={error?.includes("access code") ? <span>Enter it in <Link className="underline" href="/settings">Settings</Link>.</span> : undefined}
       />
 
-      <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+      <div className="mb-4 grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {sc?.scenarios?.map((s: any) => (
           <Card
             key={s.id}
             title={s.title}
-            right={<Badge tone={s.kind === "first_attempt" ? "good" : "warn"}>{s.kind === "first_attempt" ? "routine" : "escalation-prone"}</Badge>}
+            right={<Badge tone={(KIND_BADGE[s.kind] || [s.kind, "info"])[1] as any}>{(KIND_BADGE[s.kind] || [s.kind])[0]}</Badge>}
           >
             <p className="text-sm">{s.blurb}</p>
             <p className="mt-2 text-xs text-muted">
@@ -176,7 +188,7 @@ export default function ChallengePage() {
         ))}
       </div>
       <p className="-mt-2 mb-4 text-xs text-muted">
-        Nothing is scripted: both lanes make genuine calls with temperature 0, and escalation happens only when the validator rejects a real answer. If the small model succeeds on the hard task, that is what you will see.
+        Nothing is scripted: both lanes make genuine calls with temperature 0, and escalation happens only when the validator rejects a real answer. If the small model succeeds on the hard task, that is what you will see. The one exception is labelled: the safety drill corrupts a real answer on purpose to prove the gate rejects it, and makes no performance claim.
       </p>
 
       {(started || running) && (
@@ -201,7 +213,7 @@ export default function ChallengePage() {
                 <p className="text-sm text-muted">{running ? "Both lanes are running…" : "No result."}</p>
               ) : (
                 <div className="space-y-3">
-                  <div className={`rounded-xl p-3 text-sm font-medium ${cmp.improved ? "bg-accent-soft text-accent" : "bg-warn-soft text-warn"}`}>{cmp.verdict}</div>
+                  <div className={`rounded-xl p-3 text-sm font-medium ${cmp.safety_drill ? "bg-panel-2 text-fg" : cmp.improved ? "bg-accent-soft text-accent" : "bg-warn-soft text-warn"}`}>{cmp.verdict}</div>
                   <p className="text-sm">{cmp.what_happened}</p>
                   <div className="overflow-x-auto">
                     <table className="data">
@@ -386,7 +398,8 @@ export default function ChallengePage() {
                             </td>
                             <td className="num">{ms(c.latency_ms)}</td>
                             <td className="num">{usd(c.cost_usd, 6)}</td>
-                            <td>{c.validator_passed === true ? <Badge tone="good">pass</Badge> : c.validator_passed === false ? <Badge tone="bad">fail</Badge> : "—"}</td>
+                            <td>{c.validator_passed === true ? <Badge tone="good">pass</Badge> : c.validator_passed === false ? <Badge tone="bad">fail</Badge> : "—"}
+                              {c.injected && <span className="ml-1"><Badge tone="warn">injected</Badge></span>}</td>
                           </tr>
                         );
                       }),

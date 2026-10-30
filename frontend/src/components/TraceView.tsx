@@ -10,7 +10,9 @@ const STEP_LABEL: Record<string, string> = {
   analyze: "Analyze",
   select: "Select",
   infer: "Execute",
+  inject: "Inject",
   evaluate: "Evaluate",
+  approve: "Approve",
   repair: "Repair",
   escalate: "Escalate",
   guardrail: "Guardrail",
@@ -19,7 +21,8 @@ const STEP_LABEL: Record<string, string> = {
   final: "Result",
 };
 
-function dotColor(status: string) {
+function dotColor(status: string, step?: string) {
+  if (step === "inject") return "var(--warn)";
   return status === "done" ? "var(--accent)" : status === "failed" ? "var(--bad)" : status === "running" ? "var(--info)" : "var(--muted)";
 }
 
@@ -98,6 +101,20 @@ function Detail({ e }: { e: TraceEvent }) {
       </div>
     );
   }
+  if (e.step === "inject") {
+    return (
+      <div className="text-xs">
+        <Badge tone="warn">INJECTED · not a model failure</Badge>
+        {d.mutation === "field_value" ? (
+          <span className="ml-2 text-muted">
+            <code className="text-fg">{d.path}</code> set to <code className="text-fg">{JSON.stringify(d.injected_value)}</code> (correct: <code className="text-fg">{JSON.stringify(d.expected)}</code>)
+          </span>
+        ) : (
+          <span className="ml-2 text-muted">answer replaced with a marker</span>
+        )}
+      </div>
+    );
+  }
   if (e.step === "evaluate" && d.method) {
     return (
       <div className="text-xs text-muted">
@@ -136,7 +153,7 @@ export default function TraceView({ events, live }: { events: TraceEvent[]; live
           <li key={e.seq} className="mb-3 ml-4">
             <span
               className={`absolute -left-[5px] mt-1.5 h-2.5 w-2.5 rounded-full ${e.status === "running" && live ? "animate-pulse" : ""}`}
-              style={{ background: dotColor(e.status) }}
+              style={{ background: dotColor(e.status, e.step) }}
             />
             <div className="flex flex-wrap items-baseline gap-2">
               <span className="w-16 shrink-0 text-xs uppercase tracking-wide text-muted">{STEP_LABEL[e.step] || e.step}</span>

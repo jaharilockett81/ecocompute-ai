@@ -14,6 +14,7 @@ from typing import Awaitable, Callable
 
 from app.core.config import ModelTier, Settings
 from app.core.logging import get_logger
+from app.evaluation.faults import corrupt_candidate
 from app.evaluation.judge import judge_output
 from app.evaluation.validators import EvalResult, evaluate
 from app.persistence.store import Store
@@ -45,6 +46,8 @@ class WorkloadSpec:
     use_judge: bool = False
     forced_tier: str | None = None
     max_output_tokens: int | None = None
+    # Safety drill: corrupt the FIRST real candidate before the gate (labelled, excluded from evidence).
+    fault_injection: str | None = None
     # bookkeeping
     source: str = "playground"
     run_id: str | None = None
@@ -205,10 +208,17 @@ class EcoComputeRouter:
 
             await ev("infer", "done", f"{tier.label} responded",
                      f"{result.completion_tokens or '?'} output tokens in {result.latency_ms/1000:.2f}s", call_data)
-            final_output = result.content
+            candidate = result.content
+            injected = bool(spec.fault_injection) and attempt_idx == 1
+            if injected:
+                candidate, fault = corrupt_candidate(result.content, spec.checks)
+                await ev("inject", "info", "Injected fault (deliberate safety drill)",
+                         "The real answer above was corrupted on purpose before the quality gate. "
+                         "This is a test of the gate, not a model failure.", {**fault, "injected": True})
+            final_output = candidate
 
-            # 4. Evaluate
-            eval_res = evaluate(result.content, spec.checks, code_execution=s.enable_code_execution)
+            # 4. Evaluate — model output is untrusted until a deterministic check approves it.
+            eval_res = evaluate(candidate, spec.checks, code_execution=s.enable_code_execution)
             if result.finish_reason == "length" and not result.content.strip():
                 eval_res = EvalResult(False, eval_res.method, "output truncated at max_tokens before an answer was produced",
                                       0.0, ["truncated"], structural_failure=False)
@@ -233,11 +243,11 @@ class EcoComputeRouter:
 
             last_eval = eval_res
             self.store.add_attempt(
-                workload_id=wid, idx=attempt_idx, role="primary", tier=tier.key, model=result.model or tier.model_id,
+                workload_id=wid, idx=attempt_idx, role="injected" if injected else "primary", tier=tier.key, model=result.model or tier.model_id,
                 provider=result.provider, ok=True, passed=passed, prompt_tokens=result.prompt_tokens,
                 completion_tokens=result.completion_tokens, reasoning_tokens=result.reasoning_tokens,
                 latency_ms=result.latency_ms, cost_usd=cost, finish_reason=result.finish_reason,
-                eval_method=eval_method, eval_detail=eval_res.detail[:1000], category=analysis.category, source=spec.source, case_id=spec.case_id,
+                eval_method=eval_method, eval_detail=(f"[INJECTED FAULT] " if injected else "") + eval_res.detail[:1000], category=analysis.category, source=spec.source, case_id=spec.case_id,
             )
 
             if passed is None:
@@ -245,12 +255,21 @@ class EcoComputeRouter:
                          "Add JSON schema, required terms or enable the judge to gate quality.", eval_res.as_dict())
                 status = "unverified"
                 break
+            if passed and injected:
+                # The gate accepted a known-bad candidate: a validator defect. Never release it.
+                await ev("evaluate", "failed", "Gate defect: injected fault was accepted",
+                         "The checks did not catch a deliberately corrupted answer; it is withheld.", eval_res.as_dict())
+                status = "error"
+                break
             if passed:
                 await ev("evaluate", "done", "Quality gate passed", eval_res.detail, eval_res.as_dict())
+                await ev("approve", "done", "Approved for release",
+                         f"Released only after {eval_method} verification passed", {"approved": True, "method": eval_method})
                 status = "passed"
                 break
 
-            await ev("evaluate", "failed", "Quality gate failed", eval_res.detail, eval_res.as_dict())
+            await ev("evaluate", "failed", "Quality gate rejected the injected candidate" if injected else "Quality gate failed",
+                     eval_res.detail, {**eval_res.as_dict(), "injected": injected})
 
             # 5. Repair (same tier, with validator feedback) or escalate
             if eval_res.structural_failure and repairs_left > 0:

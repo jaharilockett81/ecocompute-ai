@@ -4,7 +4,7 @@
 
 Most teams send every request to their largest model because they can't tell in advance which requests a smaller model would get right. EcoCompute makes that call per task. It starts each workload on the smallest Nemotron tier that is *likely* to pass an objective quality gate, checks the output deterministically, and escalates only when the check actually fails. Every decision, call, token and cent is recorded and shown, and the router learns from each outcome.
 
-> Built for the Best Apps & Agents track. License: MIT.
+> Submitted to the Coding & Agentic Engineering track. License: MIT. Engineering audit: [docs/AUDIT.md](docs/AUDIT.md). Results: [docs/RESULTS.md](docs/RESULTS.md).
 
 <!-- TODO before submission: hosted demo URL, YouTube link, and the real benchmark table below. -->
 
@@ -20,9 +20,36 @@ Most teams send every request to their largest model because they can't tell in 
 | **Execute** | Calls Nebius Token Factory (OpenAI-compatible API). Records provider-reported prompt, completion and reasoning tokens, latency, request id and cost. Retries 429/5xx/timeouts with backoff. |
 | **Evaluate** | Deterministic validators: JSON Schema, exact fields, exact/label/numeric/regex answers, required terms, word and bullet limits, and Python unit tests in a sandboxed subprocess. An optional model judge is labelled an estimate. |
 | **Repair / Escalate** | One bounded repair on structural failures, then escalate to the next tier with a fresh prompt. |
+| **Approve** | Model output is untrusted. An answer is approved for release only after the deterministic checks pass; a failing answer is never approved. |
 | **Record / Learn** | Persists the full machine-readable trace and updates routing evidence. |
 
-Model tiers (configurable, verified against the authenticated catalog):
+## Architecture
+
+```mermaid
+flowchart LR
+  UI[Next.js UI<br/>Challenge, Playground, Benchmarks] -- SSE --> API[FastAPI]
+  CLI[scripts/*.py] --> R
+  API --> R[Router agent]
+  R --> A[Analyze<br/>rule-based features] --> S[Select<br/>Beta posterior, min expected chain cost]
+  S --> X[Execute]
+  X -- HTTPS, retries, timeouts --> NF[(Nebius Token Factory<br/>NVIDIA Nemotron Nano / Super / Ultra)]
+  X --> E{Deterministic gate<br/>schema, fields, tests}
+  E -- fail --> ESC[Repair / escalate<br/>bounded] --> X
+  E -- pass --> AP[Approve for release]
+  AP --> REC[Record trace, tokens, cost, request IDs] --> DB[(SQLite + JSON bundles)]
+  REC --> L[Learn: update evidence] --> S
+  G[Guardrails: access code, rate limit,<br/>per-workload and daily budget] -.-> X
+```
+
+## Models and services actually used
+
+| What | Detail | Verified? |
+| --- | --- | --- |
+| Nebius service | **Nebius Token Factory** chat completions (`https://api.tokenfactory.nebius.com/v1/`, OpenAI-compatible) and its `/models` catalog. No Nebius AI Cloud compute is used. | Client is unit-tested; a live call is verified with `scripts/verify_nebius.py` (see [RESULTS](docs/RESULTS.md) for status) |
+| NVIDIA open models | Nemotron 3 Nano 30B-A3B (small), Nemotron 3 Super 120B-A12B (medium), Nemotron 3 Ultra 550B-A55B (large, the baseline) | IDs below are checked against the authenticated catalog by `verify_nebius.py`; override with `NEBIUS_MODEL_SMALL|MEDIUM|LARGE` if they differ |
+| Everything else | Rule-based routing and deterministic validation run locally and make no model calls. The optional model judge is off by default and labelled an estimate. | — |
+
+Model tiers (configurable):
 
 | Tier | Default model | Active params |
 | --- | --- | --- |
@@ -39,13 +66,13 @@ Open **The Challenge** page and click **Run live** on a scenario. The same task 
 
 The page ticks off eight things a judge should see (requirement, smaller-model selection, validator rejection, escalation, re-check, full trace, baseline, comparison), then compares quality, latency, tokens and total cost, including routing and evaluation overhead (both $0 because routing is rule-based and validation is deterministic; their local compute time is measured from the trace). It states plainly whether optimisation helped, or what the tradeoff was.
 
-Two scenarios: **Routine triage** (a small model should pass first time) and **Demanding extraction** (strict schema, time conversion and arithmetic; hard for a small model). Nothing forces a failure: if the small model passes the hard task, the page says so. Every run is stored and listed with provider request IDs and links to the raw JSON records (`/api/challenges/<id>`, `/api/workloads/<id>`). Failure handling is tested with deterministic fixtures in `backend/tests/test_challenge.py`, never in the live demo.
+Three scenarios: **Routine triage** (a small model should pass first time) and **Demanding extraction** (strict schema, time conversion and arithmetic; hard for a small model). Nothing forces a failure: if the small model passes the hard task, the page says so. **Safety drill** is the one deliberate exception, and it is labelled as such: the small model answers the routine task for real, then EcoCompute corrupts that answer on purpose (shown as `INJECTED` in the trace, the call log and the JSON). The gate must reject it, and the router escalates and re-checks against the same requirement. The drill makes no performance claim, its injected attempt never counts as routing evidence, and if the gate ever accepts the injected answer the run is flagged as a gate defect and nothing is released. Every run is stored and listed with provider request IDs and links to the raw JSON records (`/api/challenges/<id>`, `/api/workloads/<id>`). Failure handling is tested with deterministic fixtures in `backend/tests/test_challenge.py`, never in the live demo.
 
 ## Results
 
 <!-- Fill from benchmarks/results/run-<id>-nebius.json after the real run. Never paste mock numbers here. -->
 
-_Pending: the held-out benchmark on real Nebius calls has not been run yet._ The table will report, for each condition on the 35 held-out EcoBench test tasks: pass rate with Wilson 95% CI, total cost, cost per success, tokens per task, mean latency and escalation rate, plus paired bootstrap 95% CIs for the difference versus always using the large model.
+See [docs/RESULTS.md](docs/RESULTS.md) for what has been verified so far. _Pending: the held-out benchmark on real Nebius calls has not been run yet._ The table will report, for each condition on the 35 held-out EcoBench test tasks: pass rate with Wilson 95% CI, total cost, cost per success, tokens per task, mean latency and escalation rate, plus paired bootstrap 95% CIs for the difference versus always using the large model.
 
 ## The app
 
@@ -127,8 +154,8 @@ All configuration is environment variables; see [`.env.example`](.env.example). 
 backend/        FastAPI app (router engine, policy, validators, providers, benchmark, impact estimator) + tests
 frontend/       Next.js app
 benchmarks/     EcoBench v1 dataset and exported results
-scripts/        verify_nebius.py, run_benchmark.py
-docs/           methodology
+scripts/        verify_nebius.py, run_challenge.py, run_benchmark.py
+docs/           methodology, results, engineering audit, submission kit
 DECISIONS.md    design decisions and trade-offs
 ```
 
@@ -136,7 +163,8 @@ DECISIONS.md    design decisions and trade-offs
 
 - No result is reported from the mock provider.
 - Costs come from provider-reported tokens × configured price; calls without usage are counted, not guessed.
-- Environmental figures are estimates with low/central/high bounds and listed assumptions, separated from what is measured and from what cannot be observed.
+- The only deliberately bad output is the labelled safety drill; no real model is ever steered to fail.
+- Environmental figures are estimates (from FLOPs, not power measurements) with low/central/high bounds and listed assumptions, separated from what is measured and from what cannot be observed.
 - Benchmark priors are heuristics and are shown as such; the warm condition uses calibration evidence only.
 
 See [docs/methodology.md](docs/methodology.md) and [DECISIONS.md](DECISIONS.md).

@@ -26,7 +26,7 @@ Every step streams live to the UI as a machine-readable trace. A Benchmark Lab r
 On the 35 held-out EcoBench tasks, versus always using Nemotron Ultra: TBD pass rate (95% CI TBD) at TBD% of the cost (95% CI TBD), with TBD% fewer tokens and TBD latency change. (Source: `benchmarks/results/run-TBD-nebius.json`.)
 
 ### How we built it
-FastAPI + SQLite backend; Nebius Token Factory through its OpenAI-compatible API (retries, catalog validation, reasoning-token accounting); Beta-posterior routing policy; deterministic validators and a sandboxed Python runner; Next.js frontend with SSE live traces; Render + Vercel deployment.
+FastAPI + SQLite backend; Nebius Token Factory through its OpenAI-compatible API (retries, catalog validation, reasoning-token accounting); Beta-posterior routing policy; deterministic validators and a sandboxed Python runner; Next.js frontend with SSE live traces; Docker backend + Vercel frontend. A labelled safety drill corrupts a real answer on purpose to prove the gate rejects bad candidates before approval.
 
 ### Challenges
 - Reasoning models emit hidden reasoning tokens, so a "small" model is not always cheap per answer. We count reasoning tokens in cost and in the router's expected-token estimates.
@@ -56,8 +56,9 @@ TBD: note anything real from setup, e.g. catalog model IDs vs docs, usage fields
 | --- | --- | --- |
 | 0:00–0:15 | Overview | "Most apps send every request to their biggest model. EcoCompute uses the smallest Nemotron that gets it right, and proves it." |
 | 0:15–1:05 | The Challenge → Routine triage → Run live | "Same task, two lanes, real Nebius calls." Point at the policy picking Nano, the validator passing, the baseline on Ultra, then the comparison row for cost and latency and the verdict. |
-| 1:05–1:55 | The Challenge → Demanding extraction → Run live | If Nano fails: show the validator's exact failure, the automatic escalation, the re-check against the same requirement. If Nano passes: say so — "escalation is never forced." Read the verdict, including any tradeoff. |
-| 1:55–2:20 | Verify it yourself | Request IDs and models as reported by Nebius; open the raw JSON link. "This is an agent making real decisions, not a dashboard." |
+| 1:05–1:40 | The Challenge → Demanding extraction → Run live | If Nano fails: show the validator's exact failure, the automatic escalation, the re-check against the same requirement. If Nano passes: say so — "escalation is never forced." Read the verdict, including any tradeoff. |
+| 1:40–2:00 | The Challenge → Safety drill → Run live | "This one is a deliberate test, labelled INJECTED: we corrupt Nano's real answer. The gate rejects it, nothing bad is approved, and the router recovers on Super." |
+| 2:00–2:20 | Verify it yourself | Request IDs and models as reported by Nebius; open the raw JSON link. "This is an agent making real decisions, not a dashboard." |
 | 2:20–2:45 | Benchmark Lab, completed real run | Held-out pass rates with CIs and the paired cost delta vs Ultra. |
 | 2:45–2:55 | Methodology | "Every decision is explainable; every number is sourced." |
 

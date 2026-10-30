@@ -3,6 +3,7 @@
 
     python scripts/run_challenge.py routine
     python scripts/run_challenge.py demanding
+    python scripts/run_challenge.py fault_drill   (labelled safety drill)
 
 Uses the configured provider (Nebius when NEBIUS_API_KEY is set). The run is
 stored in the SQLite DB, so it also appears on the Challenge page.
@@ -49,7 +50,7 @@ async def main() -> int:
         print(f"{name:10s} passed={ln['passed']!s:5s} path={ln['initial_tier']}->{ln['final_tier']} calls={ln['calls']} "
               f"tokens={ln['total_tokens']} wall_ms={ln['wall_ms']} cost={ln['total_cost_usd']}")
         for call in ln["call_log"]:
-            print(f"    {call['provider']} {call['model']} request_id={call['request_id']} validator_passed={call.get('validator_passed')}")
+            print(f"    {call['provider']} {call['model']} request_id={call['request_id']} validator_passed={call.get('validator_passed')}" + ("  [INJECTED FAULT]" if call.get('injected') else ""))
     print(f"\nChallenge id: {c['id']}")
     print(json.dumps(cmp["deltas"]))
     return 0

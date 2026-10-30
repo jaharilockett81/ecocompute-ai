@@ -117,7 +117,7 @@ def test_challenge_stream_endpoint(settings, store):
 @pytest.mark.parametrize("sid", list(SCENARIO_MAP))
 def test_scenario_answers_pass_their_own_validators(sid):
     from app.evaluation.validators import evaluate
-    ok = {"routine": ROUTINE_OK, "demanding": DEMANDING_OK}[sid]
+    ok = {"routine": ROUTINE_OK, "demanding": DEMANDING_OK, "fault_drill": ROUTINE_OK}[sid]
     assert evaluate(ok, SCENARIO_MAP[sid]["checks"]).passed
 
 
@@ -138,3 +138,43 @@ async def test_bundles_round_trip_and_skip_other_providers(settings, store, tmp_
     assert got["comparison"]["lanes"]["ecocompute"]["outcome"] == "escalated_then_passed"
     w = fresh.get_workload(got["ecocompute_workload_id"])
     assert len(w["attempts"]) == 2 and w["trace"][0]["step"] == "start"
+
+
+async def test_safety_drill_rejects_injected_candidate_and_recovers(settings, store):
+    router, prov = _router(settings, store, {0: ROUTINE_OK, 1: ROUTINE_OK, 2: ROUTINE_OK})
+    c = await run_challenge(settings, router, store, "fault_drill")
+    cmp = c["comparison"]
+    eco, base = cmp["lanes"]["ecocompute"], cmp["lanes"]["baseline"]
+    # The small model's real answer was correct; the drill corrupted it and the gate caught it.
+    assert eco["outcome"] == "injected_fault_rejected_then_passed" and eco["approved"] is True
+    assert eco["injected_faults"][0]["path"] == "ticket_1" and eco["injected_faults"][0]["injected_value"] == "INJECTED_FAULT"
+    assert [e["passed"] for e in eco["evaluations"]] == [False, True]
+    assert [e["injected"] for e in eco["evaluations"]] == [True, False]
+    assert eco["call_log"][0]["injected"] is True and "injected" not in eco["call_log"][1]
+    assert "ticket_1" in eco["evaluations"][0]["detail"]
+    assert cmp["improved"] is None and cmp["safety_drill"] is True and cmp["verdict"].startswith("Safety drill")
+    assert "INJECTED" in cmp["what_happened"] and base["injected_faults"] == [] and base["approved"] is True
+    # Injected attempts never become routing evidence.
+    roles = [a["role"] for a in store.get_workload(eco["workload_id"])["attempts"]]
+    assert roles == ["injected", "primary"]
+    small = [r for r in store.tier_outcomes("fixture") if r["tier"] == "small"]
+    assert all(r["passes"] == r["n"] for r in small)  # the corrupted small answer is not counted as a small-model failure
+
+
+def test_corrupt_candidate_is_deterministic_and_always_rejected():
+    from app.evaluation.faults import MARKER, corrupt_candidate
+    from app.evaluation.validators import evaluate
+    for sid, ok in (("routine", ROUTINE_OK), ("demanding", DEMANDING_OK)):
+        checks = SCENARIO_MAP[sid]["checks"]
+        a, info = corrupt_candidate(ok, checks)
+        assert (a, info) == corrupt_candidate(ok, checks)
+        assert info["mutation"] == "field_value" and not evaluate(a, checks).passed
+    # No field checks / unparsable output: the answer is replaced with a marker.
+    assert corrupt_candidate("not json", SCENARIO_MAP["routine"]["checks"])[0] == MARKER
+    assert corrupt_candidate("hello", [{"type": "contains_all", "terms": ["hello"]}])[0] == MARKER
+
+
+async def test_failed_gate_is_never_approved(settings, store):
+    router, _ = _router(settings, store, {0: ROUTINE_BAD, 1: ROUTINE_BAD, 2: ROUTINE_BAD})
+    eco = (await run_challenge(settings, router, store, "routine"))["comparison"]["lanes"]["ecocompute"]
+    assert eco["outcome"] == "escalated_still_failed" and eco["approved"] is False
