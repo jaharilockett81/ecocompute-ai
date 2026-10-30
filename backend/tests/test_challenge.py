@@ -178,3 +178,19 @@ async def test_failed_gate_is_never_approved(settings, store):
     router, _ = _router(settings, store, {0: ROUTINE_BAD, 1: ROUTINE_BAD, 2: ROUTINE_BAD})
     eco = (await run_challenge(settings, router, store, "routine"))["comparison"]["lanes"]["ecocompute"]
     assert eco["outcome"] == "escalated_still_failed" and eco["approved"] is False
+
+
+def test_imported_evidence_does_not_consume_the_hosts_daily_budget(tmp_path):
+    import time
+    from app.core.config import ROOT
+    from app.persistence.bundles import import_bundle
+    from app.persistence.store import Store
+
+    bundle = json.loads((ROOT / "benchmarks/results/run-c143a70690b64c44-nebius.json").read_text())
+    for w in bundle["workloads"]:
+        for a in w["attempts"]:
+            a["created_at"] = time.time()  # as if the evidence were recorded today
+    fresh = Store(str(tmp_path / "fresh.db"))
+    assert import_bundle(fresh, bundle)
+    assert fresh.spend_today_usd() == 0 and fresh.calls_today() == 0
+    assert fresh.get_run("c143a70690b64c44")["status"] == "completed"

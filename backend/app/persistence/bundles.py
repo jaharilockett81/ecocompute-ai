@@ -53,6 +53,7 @@ def import_bundle(store: Store, bundle: dict, only_provider: str | None = "nebiu
         return False
     exists = {"benchmark": store.get_run, "challenge": store.get_challenge, "optimization": store.get_optimization}[kind](rec["id"])
     if exists:
+        store.imported_attempt_ids.update(a["id"] for w in bundle.get("workloads") or [] for a in w.get("attempts") or [])
         return False
     for w in bundle.get("workloads") or []:
         w = dict(w)
@@ -64,6 +65,7 @@ def import_bundle(store: Store, bundle: dict, only_provider: str | None = "nebiu
         _insert(store, "workloads", w)
         for a in attempts:
             _insert(store, "attempts", a)
+            store.imported_attempt_ids.add(a["id"])
     if kind == "benchmark":
         for k in _RUN_JSON:
             if k in rec:

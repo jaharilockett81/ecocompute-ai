@@ -135,6 +135,9 @@ class Store:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.executescript(SCHEMA)
+        # Attempts loaded from committed evidence bundles were paid for elsewhere; they
+        # must not count against this host's daily budget.
+        self.imported_attempt_ids: set[str] = set()
 
     # ---------------------------------------------------------------- helpers
     def _exec(self, sql: str, params: tuple | dict = ()) -> sqlite3.Cursor:
@@ -210,16 +213,15 @@ class Store:
     def list_attempts(self, workload_id: str) -> list[dict]:
         return self._all("SELECT * FROM attempts WHERE workload_id=? ORDER BY idx", (workload_id,))
 
+    def _today_rows(self) -> list[dict]:
+        rows = self._all("SELECT id, cost_usd FROM attempts WHERE created_at>=? AND provider='nebius'", (_utc_day_start(),))
+        return [r for r in rows if r["id"] not in self.imported_attempt_ids]
+
     def spend_today_usd(self) -> float:
-        row = self._one(
-            "SELECT COALESCE(SUM(cost_usd),0) AS s FROM attempts WHERE created_at>=? AND provider='nebius'",
-            (_utc_day_start(),),
-        )
-        return float(row["s"]) if row else 0.0
+        return float(sum(r["cost_usd"] or 0 for r in self._today_rows()))
 
     def calls_today(self) -> int:
-        row = self._one("SELECT COUNT(*) AS c FROM attempts WHERE created_at>=? AND provider='nebius'", (_utc_day_start(),))
-        return int(row["c"]) if row else 0
+        return len(self._today_rows())
 
     def tier_outcomes(self, provider: str) -> list[dict]:
         """Aggregate primary-call validation outcomes per (category, tier).
