@@ -35,13 +35,13 @@ Setup: Nemotron Nano (`nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B`), Super (`nvidia/n
 | adaptive | Nano 24, Super 11 | Nano 22, Super 11, Ultra 2 |
 | adaptive_warm | Nano 35 | Nano 32, Ultra 3 |
 
-Calibration showed Nano passing 12/14 calibration tasks, so the warm router starts everything on Nano and relies on the validators to escalate. It escalated 3 tasks (sum-03, sum-04, ext-04); two of them passed on Ultra.
+Calibration showed Nano passing 12/14 calibration tasks (one quality miss, one provider overload error), so the warm router starts everything on Nano and relies on the validators to escalate. It escalated 3 tasks (sum-03, sum-04, ext-04); two of them passed on Ultra.
 
 ## What we can and cannot claim
 
 - **Cost:** both adaptive conditions cost 78–81% less than always using Ultra. The 95% intervals exclude zero in both runs.
 - **Quality:** on the held-out tasks, no task that passed on Ultra failed under adaptive routing, in either run (0 losses in 4 paired comparisons × 35 tasks). The pass-rate difference interval includes zero, so we do **not** claim higher quality. The one "gain" (ext-06) comes from a strict check: Ultra answered `"TrailLite 2 tent"` where the label is `"TrailLite 2"`.
-- **Latency is worse.** Adaptive routing was 62–72% slower on mean latency, and p95 roughly doubled. Two causes are visible in the data: Nano was slow per call on this endpoint (calibration median 6.1 s for Nano vs 1.0 s for Ultra), and escalations add calls in sequence. This is a real tradeoff for latency-sensitive traffic.
+- **Latency is worse.** Adaptive routing was 62–72% slower on mean latency, and p95 roughly doubled. Two causes are visible in the data: Nano was slow per call on this endpoint (calibration median 6.1 s for Nano vs 1.0 s for Ultra; it also returned one HTTP 529 "worker overloaded"), and escalations add calls in sequence. This is a real tradeoff for latency-sensitive traffic.
 - **Tokens did not fall.** Smaller models used about as many tokens, including reasoning tokens. The savings come from price per token, not from fewer tokens.
 - **Warm vs cold:** the calibration evidence moved 11 start decisions from Super to Nano and saved a further 2.4 points of cost. The difference between warm and cold is within run-to-run noise (see the replicate).
 
@@ -53,7 +53,7 @@ Calibration showed Nano passing 12/14 calibration tasks, so the warm router star
 | adaptive | 33/35 | $0.010138 | $0.000290 | 1,899 ms | 6,001 ms | 465.6 | 41 | 8.6% |
 | adaptive_warm (no evidence, = cold) | 33/35 | $0.008779 | $0.000251 | 2,074 ms | 6,360 ms | 466.9 | 41 | 8.6% |
 
-Versus the baseline: adaptive cost −68.8% [−83.6, −52.1], latency +113%; the second cold run cost −72.9% [−83.7, −59.5]. Per-task: 0 losses for both. Tokens rose 23–24% in this run (interval excludes zero).
+Versus the baseline: adaptive cost −68.7% [−83.6, −52.1], latency +113%; the second cold run cost −72.9% [−83.7, −59.5]. Per-task: 0 losses for both. Tokens rose 23–24% in this run (interval excludes zero).
 
 **Non-determinism at temperature 0.** The two cold-start conditions in this run made identical routing decisions but did not produce identical outcomes: `ext-06` passed in one and failed in the other, and `sum-04` the reverse. Ultra also failed `sum-04` in this run ("Nov 20" instead of "November 20") and passed it in the primary run. Single-run differences of one task are noise, which is why we report paired per-task outcomes and intervals rather than headline pass rates.
 
@@ -61,7 +61,7 @@ Versus the baseline: adaptive cost −68.8% [−83.6, −52.1], latency +113%; t
 
 | Condition | Passed | Cost | Median latency | Lost vs Ultra |
 | --- | --- | --- | --- | --- |
-| fixed:small (Nano) | 12/14 | $0.000652 (−94%) | 6,064 ms | ext-02, json-01 |
+| fixed:small (Nano) | 12/14 | $0.000652 (−94%) | 6,064 ms | ext-02 (quality), json-01 (provider error: HTTP 529 "worker overloaded", counted as a failure) |
 | fixed:medium (Super) | 14/14 | $0.002682 (−76%) | 2,004 ms | none |
 | fixed:large (Ultra) | 14/14 | $0.011304 | 1,020 ms | — |
 
@@ -75,6 +75,16 @@ Versus the baseline: adaptive cost −68.8% [−83.6, −52.1], latency +113%; t
 | sum-03 | Nano and Super (rescued by escalation to Ultra) | `contains_all: missing 'load balancer'` |
 
 These checks are strict by design, and we did not loosen them after seeing the results.
+
+## Independent verification
+
+`python scripts/verify_benchmark.py` re-checks every committed bundle offline, without an API key. On these runs it reports PASS for each of these checks:
+
+- Calibration (14) and held-out (35) case IDs are disjoint. Each test run used only held-out cases.
+- Stored cost equals the provider-reported prompt and completion tokens × the configured prices, for every condition. So the −78.4% and −80.8% follow directly from raw token counts.
+- Cold `adaptive` used no observed evidence. In the primary run, `adaptive_warm` evidence counts per (category, tier) never exceed the calibration-run attempts, so no held-out task informed its own routing.
+- Every successful call carries a provider request ID (115 of 115 in the primary run).
+- Provider errors are listed apart from quality failures. There was one: Nano, json-01, HTTP 529 during calibration.
 
 ## Cost of running this benchmark
 

@@ -44,6 +44,8 @@ Primary run `1c62f1ef2642451f`, after calibration run `c143a70690b64c44`. Full a
 
 Not a quality-improvement claim: the pass-rate difference CI is [0, +8.6 pts]. Latency is worse (mean +62–72%). Replicate run `895becc994d74ff5`: −69% / −73% cost, 0 tasks lost.
 
+Check the committed evidence offline (no key needed): `python scripts/verify_benchmark.py` (split separation, no calibration leakage, cost recomputed from raw tokens, request IDs).
+
 Reproduce:
 
 ```bash

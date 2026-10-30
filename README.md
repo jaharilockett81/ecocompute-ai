@@ -129,7 +129,7 @@ Nemotron Super diagnosed over-provisioning from the measured token profile. It p
 | Median / p95 latency | 1.1 s / 2.9 s | 1.6 s / 5.7 s (**slower**: tradeoff) |
 | Tokens per task | 395 | 427 (+8%, CI includes 0) |
 
-A replicate run gave −69% to −73% cost with 0 tasks lost. The pass-rate difference interval includes zero, so we claim **no loss of required quality**, not better quality. Savings come from cheaper models, not fewer tokens, and latency is worse.
+A replicate run gave −69% to −73% cost with 0 tasks lost. Anyone can re-check the committed records offline with `python scripts/verify_benchmark.py` (split separation, no calibration leakage, cost recomputed from raw tokens). The pass-rate difference interval includes zero, so we claim **no loss of required quality**, not better quality. Savings come from cheaper models, not fewer tokens, and latency is worse.
 
 ## The app
 
