@@ -174,12 +174,22 @@ class Store:
             row["attempts"] = self.list_attempts(wid)
         return row
 
-    def list_workloads(self, source: str | None = None, limit: int = 50, offset: int = 0) -> list[dict]:
-        sql = "SELECT * FROM workloads"
-        params: tuple = ()
+    def list_workloads(
+        self, source: str | None = None, limit: int = 50, offset: int = 0, q: str | None = None, status: str | None = None
+    ) -> list[dict]:
+        where: list[str] = []
+        params: list = []
         if source:
-            sql += " WHERE source=?"
-            params = (source,)
+            where.append("source=?")
+            params.append(source)
+        if status:
+            where.append("status=?")
+            params.append(status)
+        if q:
+            like = "%" + q.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%"
+            where.append("(task_text LIKE ? ESCAPE '\\' OR case_id LIKE ? ESCAPE '\\' OR category LIKE ? ESCAPE '\\' OR id LIKE ? ESCAPE '\\')")
+            params += [like] * 4
+        sql = "SELECT * FROM workloads" + (" WHERE " + " AND ".join(where) if where else "")
         sql += " ORDER BY created_at DESC LIMIT ? OFFSET ?"
         return [_deser_workload(r, light=True) for r in self._all(sql, (*params, limit, offset))]
 

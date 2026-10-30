@@ -55,7 +55,7 @@ export default function BenchmarkLab() {
       <ErrorBox error={error || err} hint={error ? <BackendHint /> : undefined} />
       <SampleBanner show={runs?.sample_data} />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-        <Card title="New run">
+        <Card title="Configure a run" subtitle="Same cases, same validators, temperature 0 for every condition.">
           <div className="space-y-3 text-sm">
             <div>
               <div className="mb-1 text-xs text-muted">Conditions (first fixed:large is the baseline)</div>
@@ -92,6 +92,11 @@ export default function BenchmarkLab() {
                 </select>
               </label>
             </div>
+            {split !== "test" && (
+              <p className="rounded-xl bg-warn-soft p-2 text-xs text-warn">
+                {split === "calib" ? "Calibration split: routing evidence only. Its results are not reported as held-out performance." : "All cases mixes calibration and held-out data; use the test split for reported results."}
+              </p>
+            )}
             <p className="text-xs text-muted">
               {n} cases × {conds.length} conditions × {repeats} repeat(s). Worst case {worst} calls (cap {cfg?.benchmark_max_calls ?? "…"}). Spend stops at the daily budget.
             </p>
@@ -136,7 +141,12 @@ export default function BenchmarkLab() {
                           <Badge tone={statusTone(r.status)}>{r.status}</Badge>
                         </td>
                         <td className="num">
-                          {r.progress_done}/{r.progress_total}
+                          <div className="ml-auto flex w-28 items-center gap-2">
+                            <div className="h-1.5 flex-1 rounded-full bg-panel-2" aria-hidden>
+                              <div className="h-1.5 rounded-full bg-accent" style={{ width: `${r.progress_total ? (100 * r.progress_done) / r.progress_total : 0}%` }} />
+                            </div>
+                            <span className="text-xs">{r.progress_done}/{r.progress_total}</span>
+                          </div>
                         </td>
                         <td className="num">{rates.length ? pct(Math.max(...rates)) : "—"}</td>
                       </tr>

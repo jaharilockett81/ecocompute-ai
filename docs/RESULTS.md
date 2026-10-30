@@ -6,7 +6,7 @@
 
 | Check | How | Result |
 | --- | --- | --- |
-| Optimizer loop, router, validators, approval gate, escalation, safety drills, comparison logic | `cd backend && pytest -q` (deterministic fixtures, no network) | 66 passed ([output](TEST_OUTPUT.txt)) |
+| Optimizer loop, router, validators, approval gate, escalation, safety drills, comparison logic | `cd backend && pytest -q` (deterministic fixtures, no network) | 68 passed ([output](TEST_OUTPUT.txt)) |
 | Optimizer end to end (UI + API + CLI), including allowlist refusal, gate rejection of the injected 16-token cap, and accept/reject/export | Mock provider, in a browser and via `scripts/run_optimizer.py` | Runs and is labelled sample data. The mock numbers are **not** results. |
 | Frontend | `npx tsc --noEmit && npm run build` | passes |
 | Challenge end to end (UI + API + CLI), including the safety drill | Mock provider, in a browser and via `scripts/run_challenge.py` | Runs and is labelled sample data. The mock numbers are **not** results. |

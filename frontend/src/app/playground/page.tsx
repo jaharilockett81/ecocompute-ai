@@ -149,7 +149,7 @@ export default function Playground() {
         hint={error?.includes("access code") ? <span>Enter it in <Link className="underline" href="/settings">Settings</Link>.</span> : undefined}
       />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-        <Card title="Workload">
+        <Card title="Compose a workload" subtitle="Pick a preset or write your own task, then add the checks that define success.">
           <div className="space-y-3 text-sm">
             <label className="block">
               <span className="text-xs text-muted">Preset</span>
@@ -174,7 +174,7 @@ export default function Playground() {
             </label>
             <label className="block">
               <span className="text-xs text-muted">Task</span>
-              <textarea className="input mt-1 font-mono text-xs" rows={9} value={form.task} onChange={(e) => set("task", e.target.value)} />
+              <textarea className="input mt-1 text-[15px] leading-relaxed" rows={10} value={form.task} onChange={(e) => set("task", e.target.value)} />
             </label>
             <div className="grid grid-cols-2 gap-3">
               <label>

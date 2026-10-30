@@ -74,6 +74,18 @@ def test_overview_impact_and_history(client):
     assert client.get("/api/router/evidence").json()["evidence"]
 
 
+def test_history_search_is_parameterized(client):
+    client.post("/api/workloads", json={"task": "Classify: lovely. positive or negative?", "category": "classification", "required_terms": ["mock"]})
+    client.post("/api/workloads", json={"task": "Summarize the weather report.", "category": "summarization"})
+    assert len(client.get("/api/workloads", params={"q": "lovely"}).json()["items"]) == 1
+    assert len(client.get("/api/workloads", params={"q": "summar"}).json()["items"]) == 1
+    # LIKE wildcards and quotes are literal text, not patterns or SQL
+    assert client.get("/api/workloads", params={"q": "%"}).json()["items"] == []
+    assert client.get("/api/workloads", params={"q": "' OR 1=1 --"}).json()["items"] == []
+    st = client.get("/api/workloads").json()["items"][0]["status"]
+    assert all(w["status"] == st for w in client.get("/api/workloads", params={"status": st}).json()["items"])
+
+
 def test_benchmark_endpoints(client):
     r = client.post("/api/benchmarks", json={"conditions": ["fixed:large", "adaptive"], "categories": ["classification"], "limit": 2})
     assert r.status_code == 200, r.text

@@ -1,10 +1,26 @@
 "use client";
 
 import { useApi } from "@/lib/useApi";
-import { Card, PageHeader } from "@/components/ui";
+import { PageHeader } from "@/components/ui";
 
 function Eq({ children }: { children: React.ReactNode }) {
   return <pre className="my-2 overflow-x-auto rounded-xl bg-panel-2 p-3 font-mono text-xs">{children}</pre>;
+}
+
+function Section({ n, title, lede, open, children }: { n: number; title: string; lede: string; open?: boolean; children: React.ReactNode }) {
+  return (
+    <details open={open} className="group rounded-[20px] border border-border bg-panel">
+      <summary className="flex cursor-pointer list-none items-start gap-4 p-6 [&::-webkit-details-marker]:hidden">
+        <span className="eyebrow mt-2 w-6 shrink-0">{String(n).padStart(2, "0")}</span>
+        <span className="flex-1">
+          <span className="display block text-[24px] leading-tight">{title}</span>
+          <span className="mt-1 block text-sm text-muted">{lede}</span>
+        </span>
+        <span aria-hidden className="mt-2 text-muted transition-transform group-open:rotate-45">+</span>
+      </summary>
+      <div className="border-t border-border px-6 pb-6 pt-4 sm:pl-16">{children}</div>
+    </details>
+  );
 }
 
 export default function Methodology() {
@@ -15,8 +31,23 @@ export default function Methodology() {
     <div className="max-w-4xl">
       <PageHeader
         title="Methodology" subtitle="How EcoCompute decides, how it checks quality, how the benchmark is run, and what the impact numbers do and do not mean." />
+      <p className="display mb-8 max-w-3xl text-[22px] leading-snug text-fg">
+        The model proposes. Deterministic measurement decides. A person signs off.
+      </p>
       <div className="space-y-4 text-sm leading-relaxed">
-        <Card title="1 · Routing policy">
+        <Section n={1} open title="The optimization loop" lede="Observe, reason, propose, approve, execute, measure, verify, decide.">
+          <ol className="list-decimal space-y-1 pl-5">
+            <li><b>Observe.</b> Run the workload on the current configuration and record every call: tokens, cost, latency, validator verdicts.</li>
+            <li><b>Reason.</b> Nemotron (the analyst model) reads the measured profile and returns structured proposals in JSON.</li>
+            <li><b>Constrain.</b> Each proposal is checked against an allowlist of three knobs: route a category to a tier, cap output tokens, enable escalation. Anything else, including commands or code, is refused before execution.</li>
+            <li><b>Approve.</b> A person approves testing. Nothing touches the live router.</li>
+            <li><b>Execute and verify.</b> The candidate runs on the same tasks. An independent gate accepts it only if no task that passed before now fails, the pass count holds, there are no provider errors, and cost falls. The LLM cannot override a failing validator.</li>
+            <li><b>Refine.</b> Up to three rounds, with the measured regressions fed back to the analyst.</li>
+            <li><b>Decide.</b> A person accepts, rejects, or exports the verified recommendation.</li>
+          </ol>
+          <p className="mt-3 text-muted">The optimizer verifies on the same recurring workload it tunes. That is the intended use; a result does not transfer automatically to other workloads.</p>
+        </Section>
+        <Section n={2} title="Routing policy" lede="Cheapest start tier whose escalation chain still meets the quality target.">
           <p>
             For each tier <i>i</i> the router holds p<sub>i</sub>, the probability that the tier&apos;s output passes the quality gate for the task&apos;s category, and c<sub>i</sub>, its expected cost per call. Starting at tier <i>s</i> and escalating on failure:
           </p>
@@ -28,17 +59,17 @@ P[pass | s] = 1 − Π_{k=s..K} (1 − p_k)`}</Eq>
           <p className="mt-2">
             p<sub>i</sub> is a Beta posterior mean with pseudo-count k = 4: a documented heuristic prior per (category, tier), reduced for complex tasks, updated with the observed pass/fail counts. The prior is an assumption, not a trained model, and it fades as evidence accumulates. Expected tokens use observed averages once a (category, tier) has three or more graded attempts.
           </p>
-        </Card>
+        </Section>
 
-        <Card title="2 · Quality gate">
+        <Section n={3} title="Quality gate" lede="Deterministic validators decide; model judges are labelled estimates.">
           <p>Every benchmark task and every preset is graded deterministically. Validators include JSON Schema, exact field equality on dotted paths, exact / label / numeric (with tolerance) / regex answers, required terms, word and bullet limits, and Python unit tests executed in a sandboxed subprocess with a timeout.</p>
           <p className="mt-2">
             When a task has no deterministic check, the output is marked <b>unverified</b>. An optional model judge can score it, but the score is labelled an <i>estimate</i> and its cost is counted as overhead. Judge scores are never used in benchmark results.
           </p>
           <p className="mt-2">On failure the router may make one bounded repair attempt on the same tier (structural failures only, with the validator&apos;s message as feedback), then escalate to the next tier with a fresh prompt.</p>
-        </Card>
+        </Section>
 
-        <Card title="3 · Benchmark design">
+        <Section n={4} title="Benchmark design" lede="Calibration and held-out splits, paired comparisons, honest intervals.">
           <ul className="list-disc space-y-1 pl-5">
             <li>EcoBench v1: 49 original tasks in 7 categories (extraction, summarization, classification, structured JSON, reasoning, coding, data interpretation). 14 calibration and 35 held-out test cases.</li>
             <li>Conditions: <code>fixed:&lt;tier&gt;</code> always uses one model with no escalation; <code>adaptive</code> routes from the prior only (cold); <code>adaptive_warm</code> routes with evidence from the calibration split only, so no test case informs its own routing.</li>
@@ -47,9 +78,14 @@ P[pass | s] = 1 − Π_{k=s..K} (1 − p_k)`}</Eq>
             <li>Cost is provider-reported tokens × configured price. Hidden reasoning tokens are included because they are billed as completion tokens.</li>
             <li>Results come only from stored records of real calls. Runs on the offline mock provider are labelled sample data everywhere and never reported.</li>
           </ul>
-        </Card>
+        </Section>
 
-        <Card title="4 · Environmental impact estimate">
+        <Section n={5} title="Environmental impact estimate" lede="A: measured. B: modeled estimate with bounds. C: not observable.">
+          <div className="mb-3 grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="rounded-2xl border border-border p-3"><b>A · Measured</b><p className="text-xs text-muted">Provider-reported tokens, calls, latency, configured-price cost, backend CPU time.</p></div>
+            <div className="rounded-2xl border border-dashed border-border p-3"><b>B · Estimated</b><p className="text-xs text-muted">Energy, CO₂e and water from FLOPs with low/central/high scenarios. Never a power reading.</p></div>
+            <div className="rounded-2xl border border-border p-3"><b>C · Not observable</b><p className="text-xs text-muted">GPU type, utilisation, memory and electrical power behind a serverless API.</p></div>
+          </div>
           {!m ? (
             <p className="text-muted">Loading parameters from the backend…</p>
           ) : (
@@ -85,19 +121,19 @@ P[pass | s] = 1 − Π_{k=s..K} (1 − p_k)`}</Eq>
                   </tbody>
                 </table>
               </div>
-              <h3 className="mt-4 font-semibold">Assumptions</h3>
+              <h3 className="eyebrow mt-5 mb-1">Assumptions</h3>
               <ul className="list-disc space-y-1 pl-5">
                 {m.assumptions.map((a: string) => (
                   <li key={a}>{a}</li>
                 ))}
               </ul>
-              <h3 className="mt-4 font-semibold">Not observable</h3>
+              <h3 className="eyebrow mt-5 mb-1">Not observable</h3>
               <ul className="list-disc space-y-1 pl-5">
                 {m.not_observable.map((a: string) => (
                   <li key={a}>{a}</li>
                 ))}
               </ul>
-              <h3 className="mt-4 font-semibold">Sources</h3>
+              <h3 className="eyebrow mt-5 mb-1">Sources</h3>
               <ul className="list-disc space-y-1 pl-5">
                 {m.sources.map((s: any) => (
                   <li key={s.id}>
@@ -110,16 +146,16 @@ P[pass | s] = 1 − Π_{k=s..K} (1 − p_k)`}</Eq>
               </ul>
             </>
           )}
-        </Card>
+        </Section>
 
-        <Card title="5 · Limitations">
+        <Section n={6} title="Limitations" lede="What these numbers cannot tell you.">
           <ul className="list-disc space-y-1 pl-5">
             <li>35 held-out tasks give wide intervals; small differences are not claimed as significant.</li>
             <li>Category heuristics in the analyzer are keyword-based and can misclassify; callers can set the category explicitly.</li>
             <li>Prices and model IDs are configuration, verified against the authenticated Nebius catalog at startup and in Settings.</li>
             <li>Environmental figures are scenario estimates, not measurements, and are shown with their bounds.</li>
           </ul>
-        </Card>
+        </Section>
       </div>
     </div>
   );

@@ -243,8 +243,9 @@ async def stream_workload(req: WorkloadRequest):
 
 
 @app.get("/api/workloads")
-async def list_workloads(source: str | None = None, limit: int = 50, offset: int = 0):
-    return {"items": state.store.list_workloads(source, min(limit, 200), offset), **_sample_flag()}
+async def list_workloads(source: str | None = None, limit: int = 50, offset: int = 0, q: str | None = None, status: str | None = None):
+    q = (q or "").strip()[:100] or None
+    return {"items": state.store.list_workloads(source, min(limit, 200), offset, q, status), **_sample_flag()}
 
 
 @app.get("/api/workloads/{wid}")

@@ -6,6 +6,37 @@ import { useApi } from "@/lib/useApi";
 import { ms, pct, usd } from "@/lib/format";
 import { Badge, BackendHint, Card, ErrorBox, KV, PageHeader, TierBadge } from "@/components/ui";
 
+function Check({ ok, label, detail, warnOnly }: { ok: boolean; label: string; detail: string; warnOnly?: boolean }) {
+  const tone = ok ? "text-accent" : warnOnly ? "text-warn" : "text-bad";
+  return (
+    <li className="flex items-start gap-3 rounded-2xl border border-border p-3">
+      <span aria-hidden className={`mt-0.5 text-base leading-none ${tone}`}>{ok ? "●" : "○"}</span>
+      <span>
+        <span className="font-medium">{label}</span>
+        <span className="sr-only">: {ok ? "ok" : "attention"}</span>
+        <span className="block text-xs text-muted">{detail}</span>
+      </span>
+    </li>
+  );
+}
+
+function SpendMeter({ spent, budget, calls }: { spent: number; budget: number; calls: number }) {
+  const frac = budget > 0 ? Math.min(1, spent / budget) : 0;
+  return (
+    <div>
+      <div className="flex items-baseline justify-between text-sm">
+        <span>
+          <span className="display text-2xl">{usd(spent, 4)}</span> <span className="text-muted">spent today of {usd(budget, 2)}</span>
+        </span>
+        <span className="text-xs text-muted">{calls} calls</span>
+      </div>
+      <div className="mt-2 h-2 rounded-full bg-panel-2" role="meter" aria-valuemin={0} aria-valuemax={budget} aria-valuenow={spent} aria-label="Daily spend">
+        <div className={`h-2 rounded-full ${frac > 0.8 ? "bg-warn" : "bg-accent"}`} style={{ width: `${Math.max(frac * 100, spent > 0 ? 1 : 0)}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { data: cfg, error, reload } = useApi<any>("/api/config");
   const [base, setBase] = useState("");
@@ -64,23 +95,43 @@ export default function SettingsPage() {
         <ErrorBox error={error} hint={<BackendHint />} />
 
         {cfg && (
-          <Card title="Backend configuration">
-            <KV
-              rows={[
-                ["Provider", <span key="p">{cfg.provider} {cfg.sample_data ? <Badge tone="warn">sample data</Badge> : <Badge tone="good">live</Badge>}</span>],
-                ["Base URL", <code key="b">{cfg.base_url}</code>],
-                ["API key configured", cfg.api_key_configured ? "yes" : "no"],
-                ["Tiers", <span key="t" className="flex flex-col gap-1">{cfg.tiers.map((t: any) => <span key={t.key}><TierBadge tier={t.key} label={t.label} /> <code className="text-xs">{t.model_id}</code></span>)}</span>],
-                ["Judge model", <code key="j">{cfg.judge_model}</code>],
-                ["Spend today", `${usd(cfg.spend_today_usd, 4)} of ${usd(cfg.daily_budget_usd, 2)} (${cfg.calls_today} calls)`],
-                ["Per-workload budget", usd(cfg.max_workload_cost_usd, 3)],
-                ["Benchmark call cap", cfg.benchmark_max_calls],
-                ["Rate limit", `${cfg.rate_limit_per_minute} paid requests / min`],
-                ["Code execution validator", cfg.code_execution_enabled ? "enabled (sandboxed)" : "disabled"],
-                ["First-attempt pass floor", pct(cfg.min_start_pass, 0)],
-              ]}
-            />
-          </Card>
+          <>
+            <Card title="Secure configuration" subtitle="Secrets stay on the backend. The browser only learns whether they are set.">
+              <ul className="grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+                <Check ok={cfg.api_key_configured} label="Nebius API key" detail={cfg.api_key_configured ? "set on the backend, never sent to the browser" : "not set: offline mock provider, sample data only"} />
+                <Check ok={!cfg.sample_data} label="Real inference" detail={cfg.sample_data ? "mock provider; numbers are placeholders" : `${cfg.provider} at ${cfg.base_url}`} />
+                <Check ok={cfg.access_code_required} warnOnly label="Demo access code" detail={cfg.access_code_required ? "required for paid calls" : "not required (fine locally; set one before sharing a public URL)"} />
+                <Check ok={cfg.code_execution_enabled} warnOnly label="Code validator" detail={cfg.code_execution_enabled ? "sandboxed subprocess with a timeout" : "disabled; coding tasks are unverified"} />
+              </ul>
+            </Card>
+
+            <Card title="Cost controls" subtitle="Hard limits enforced by the backend before every paid call.">
+              <SpendMeter spent={cfg.spend_today_usd} budget={cfg.daily_budget_usd} calls={cfg.calls_today} />
+              <div className="mt-4">
+                <KV
+                  rows={[
+                    ["Per-workload budget", usd(cfg.max_workload_cost_usd, 3)],
+                    ["Benchmark call cap", cfg.benchmark_max_calls],
+                    ["Rate limit", `${cfg.rate_limit_per_minute} paid requests / min`],
+                    ["Max output tokens", cfg.max_output_tokens],
+                    ["First-attempt pass floor", pct(cfg.min_start_pass, 0)],
+                  ]}
+                />
+              </div>
+            </Card>
+
+            <Card title="Models" subtitle="Configured by environment variables; verify them against the catalog below.">
+              <KV
+                rows={[
+                  ["Tiers", <span key="t" className="flex flex-col gap-1">{cfg.tiers.map((t: any) => <span key={t.key}><TierBadge tier={t.key} label={t.label} /> <code className="text-xs">{t.model_id}</code></span>)}</span>],
+                  ["Optimizer analyst", <code key="a">{cfg.analyst_model}</code>],
+                  ["Judge model (estimates only)", <code key="j">{cfg.judge_model}</code>],
+                  ["Baseline tier", <TierBadge key="b" tier={cfg.baseline_tier} />],
+                  ["Temperature", cfg.temperature],
+                ]}
+              />
+            </Card>
+          </>
         )}
 
         <Card title="Provider diagnostics" right={<span className="flex gap-2"><button className="btn" disabled={diagBusy} onClick={() => runDiag(false)}>Check catalog</button><button className="btn" disabled={diagBusy} onClick={() => runDiag(true)} title="Makes one tiny paid call to the smallest tier">Catalog + ping</button></span>}>

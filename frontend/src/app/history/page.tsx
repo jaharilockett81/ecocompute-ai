@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useApi } from "@/lib/useApi";
 import { ms, num, usd, when } from "@/lib/format";
 import { Badge, BackendHint, Card, ErrorBox, Loading, PageHeader, SampleBanner, statusTone, TierBadge } from "@/components/ui";
@@ -10,8 +10,20 @@ const PAGE = 50;
 
 export default function HistoryPage() {
   const [source, setSource] = useState("");
+  const [status, setStatus] = useState("");
+  const [text, setText] = useState("");
+  const [q, setQ] = useState("");
   const [offset, setOffset] = useState(0);
-  const { data, error } = useApi<any>(`/api/workloads?limit=${PAGE}&offset=${offset}${source ? `&source=${source}` : ""}`);
+  // Debounce typing so each keystroke doesn't hit the API
+  useEffect(() => {
+    const t = setTimeout(() => { setQ(text.trim()); setOffset(0); }, 250);
+    return () => clearTimeout(t);
+  }, [text]);
+  const qs = new URLSearchParams({ limit: String(PAGE), offset: String(offset) });
+  if (source) qs.set("source", source);
+  if (status) qs.set("status", status);
+  if (q) qs.set("q", q);
+  const { data, error } = useApi<any>(`/api/workloads?${qs}`);
   const items: any[] = data?.items || [];
 
   return (
@@ -19,21 +31,42 @@ export default function HistoryPage() {
       <PageHeader
         title="History"
         subtitle="Every workload is recorded with its full trace, attempts, tokens, latency and cost."
-        actions={
-          <select className="input" value={source} onChange={(e) => { setSource(e.target.value); setOffset(0); }}>
-            <option value="">All sources</option>
-            <option value="playground">Playground</option>
-            <option value="benchmark">Benchmark</option>
-          </select>
-        }
       />
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        <label className="sr-only" htmlFor="hist-q">Search history</label>
+        <input
+          id="hist-q"
+          type="search"
+          className="input min-w-0 flex-1 sm:max-w-md"
+          placeholder="Search task text, case ID, category or workload ID"
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+        />
+        <label className="sr-only" htmlFor="hist-source">Source</label>
+        <select id="hist-source" className="input" style={{ width: "auto" }} value={source} onChange={(e) => { setSource(e.target.value); setOffset(0); }}>
+          <option value="">All sources</option>
+          <option value="playground">Playground</option>
+          <option value="benchmark">Benchmark</option>
+          <option value="challenge">Challenge</option>
+          <option value="optimizer">Optimizer</option>
+        </select>
+        <label className="sr-only" htmlFor="hist-status">Status</label>
+        <select id="hist-status" className="input" style={{ width: "auto" }} value={status} onChange={(e) => { setStatus(e.target.value); setOffset(0); }}>
+          <option value="">Any status</option>
+          <option value="passed">Passed</option>
+          <option value="failed">Failed</option>
+          <option value="unverified">Unverified</option>
+          <option value="error">Error</option>
+          <option value="budget_blocked">Budget blocked</option>
+        </select>
+      </div>
       <ErrorBox error={error} hint={<BackendHint />} />
       <SampleBanner show={data?.sample_data} />
       {!data && !error && <Loading />}
       {data && (
         <Card>
           {items.length === 0 ? (
-            <p className="text-sm text-muted">No workloads yet.</p>
+            <p className="text-sm text-muted">{q || source || status ? "No workloads match these filters." : "No workloads yet."}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="data">

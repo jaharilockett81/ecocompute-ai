@@ -31,7 +31,7 @@ This audit separates what is implemented and tested from what depends on credent
 
 ## 3. Tests and benchmarks actually run
 
-- `cd backend && python -m pytest -v`: **66 passed** ([full output](TEST_OUTPUT.txt)).
+- `cd backend && python -m pytest -v`: **68 passed** ([full output](TEST_OUTPUT.txt)).
 - `cd frontend && npx tsc --noEmit && npm run build`: passes.
 - The full `/optimize` journey was driven in a headless browser against the mock provider (select → baseline → analysis → approve → verify with drill → decision), with no console errors.
 - `scripts/run_optimizer.py` was run on the mock provider. The output is sample data and is not reported anywhere as a result.
