@@ -1,6 +1,6 @@
 # Results
 
-**Status (2026-10-30): live Nebius inference verified (see below); optimizer and benchmark results not recorded yet.** This file reports only what has actually been run. Rows marked *pending* are filled from committed `benchmarks/results/*-nebius.json` bundles, never by hand and never from the mock provider.
+**Status (2026-10-30): live Nebius inference verified, and one real optimizer run recorded (support-ops). The other workloads and the held-out benchmark are still pending.** This file reports only what has actually been run. Rows marked *pending* are filled from committed `benchmarks/results/*-nebius.json` bundles, never by hand and never from the mock provider.
 
 ## What has been verified
 
@@ -16,7 +16,7 @@
 
 | Workload | Baseline (pass, cost, tokens) | Accepted round | Optimized (pass, cost, tokens) | Δ cost | Δ model time | Drill rejected? | Bundle |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| support-ops (8 tasks) | *pending* | | | | | | |
+| support-ops (8 tasks) | 7/8, $0.005453, 2,389 | 1 | 7/8 (no per-task regression), $0.001980, 2,112 | **−63.7%** | +33.4% (slower) | yes, 0/8 passed | [trace](TRACE.md), [bundle](../benchmarks/results/optimization-b75c45c2fcc1431f-nebius.json) |
 | data-pipeline (8 tasks) | *pending* | | | | | | |
 | mixed-agent (8 tasks) | *pending* | | | | | | |
 
