@@ -73,6 +73,18 @@ def test_metrics_helpers():
     assert condition_summary(rows_a)["success_rate"] == 1.0
     c = compare(rows_a, rows_b)
     assert c["cost_rel_change"] == -0.6 and c["latency_mean_rel_change"] == -0.4
+    assert c["paired_outcomes"]["both_pass"] == 10 and c["paired_outcomes"]["losses"] == []
+
+
+def test_paired_outcomes_expose_individual_losses_behind_equal_pass_rates():
+    base = [{"case_id": str(i), "status": "passed" if i != 0 else "failed", "cost_usd": 0.01, "latency_ms": 1000,
+             "prompt_tokens": 10, "completion_tokens": 10, "calls": 1, "usage_complete": True, "category": "c"} for i in range(6)]
+    new = [dict(r, status="passed" if r["case_id"] != "5" else "failed") for r in base]
+    c = compare(new, base)
+    assert c["success_rate_diff"] == 0  # same aggregate pass rate...
+    assert c["paired_outcomes"]["gains"] == ["0"] and c["paired_outcomes"]["losses"] == ["5"]  # ...but a real per-task loss
+    s = condition_summary(new)
+    assert [f["case_id"] for f in s["quality_failures"]] == ["5"] and s["cost_per_task_usd"] == 0.01
 
 
 def test_impact_estimates_are_scenarios_with_labels():  # Acceptance test 7

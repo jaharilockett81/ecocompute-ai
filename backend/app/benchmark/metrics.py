@@ -54,6 +54,10 @@ def condition_summary(rows: list[dict]) -> dict:
         "cost_complete": cost_complete,
         "overhead_cost_usd": round(sum(r.get("overhead_cost_usd") or 0 for r in rows), 6),
         "cost_per_success_usd": round(total_cost / passed, 6) if total_cost is not None and passed else None,
+        "cost_per_task_usd": round(total_cost / n, 8) if total_cost is not None and n else None,
+        "quality_failures": [{"case_id": r["case_id"], "repeat": r.get("repeat", 0), "category": r.get("category"),
+                              "status": r["status"], "final_tier": r.get("final_tier"), "eval_method": r.get("eval_method")}
+                             for r in rows if r["status"] != "passed"],
         "calls": sum(r.get("calls") or 0 for r in rows),
         "calls_per_task": round(sum(r.get("calls") or 0 for r in rows) / n, 3) if n else None,
         "escalation_rate": round(sum(1 for r in rows if (r.get("escalations") or 0) > 0) / n, 4) if n else None,
@@ -115,8 +119,20 @@ def compare(rows_new: list[dict], rows_base: list[dict]) -> dict:
     cost_pairs = [(a["cost_usd"], b["cost_usd"]) for a, b in pairs if a.get("cost_usd") is not None and b.get("cost_usd") is not None]
     tok_pairs = [((a.get("prompt_tokens") or 0) + (a.get("completion_tokens") or 0), (b.get("prompt_tokens") or 0) + (b.get("completion_tokens") or 0)) for a, b in pairs]
     lat_pairs = [(a["latency_ms"], b["latency_ms"]) for a, b in pairs if a.get("latency_ms") and b.get("latency_ms")]
+    outcome = Counter()
+    gains, losses = [], []
+    for a, b in pairs:
+        pa, pb = a["status"] == "passed", b["status"] == "passed"
+        outcome["both_pass" if pa and pb else "both_fail" if not pa and not pb else "only_new_pass" if pa else "only_baseline_pass"] += 1
+        if pa and not pb:
+            gains.append(a["case_id"])
+        if pb and not pa:
+            losses.append(a["case_id"])
     return {
         "paired_tasks": len(pairs),
+        "paired_outcomes": {"both_pass": outcome["both_pass"], "both_fail": outcome["both_fail"],
+                            "only_new_pass": outcome["only_new_pass"], "only_baseline_pass": outcome["only_baseline_pass"],
+                            "gains": sorted(gains), "losses": sorted(losses)},
         "success_rate_diff": round((s_new["success_rate"] or 0) - (s_base["success_rate"] or 0), 4) if s_new["n"] and s_base["n"] else None,
         "success_rate_diff_ci95": paired_bootstrap(succ_pairs, "diff_mean"),
         "cost_rel_change": _rel(s_new["total_cost_usd"], s_base["total_cost_usd"]),
