@@ -13,8 +13,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from app.api.presets import PRESETS
-from app.benchmark.runner import BenchmarkRunner, load_dataset
+from app.benchmark.runner import BenchmarkRunner, load_dataset, results_dir
 from app.challenge import SCENARIO_MAP, public_scenarios, run_challenge
+from app.optimizer import Optimizer, preset_workloads, validate_upload
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger
 from app.core.config import ROOT
@@ -39,6 +40,7 @@ class AppState:
     router: EcoComputeRouter
     bench: BenchmarkRunner
     impact: EnvironmentalImpactEstimator
+    optimizer: Optimizer
     hits: dict[str, deque]
 
 
@@ -58,6 +60,7 @@ def init_state(settings: Settings, provider=None) -> None:
     state.router = EcoComputeRouter(settings, state.provider, state.store)
     state.bench = BenchmarkRunner(settings, state.router, state.store)
     state.impact = EnvironmentalImpactEstimator({t.key: t.active_params_b for t in settings.tiers})
+    state.optimizer = Optimizer(settings, state.router, state.store, state.impact)
     state.hits = defaultdict(deque)
 
 
@@ -339,6 +342,151 @@ async def stream_challenge(scenario_id: str):
     return StreamingResponse(gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 
+# ------------------------------------------------------------------ optimizer
+def _sse(work) -> StreamingResponse:
+    """Run `work(emit)` in the background and stream its events; the final state is sent as `done`."""
+    queue: asyncio.Queue = asyncio.Queue()
+
+    async def emit(event: dict) -> None:
+        await queue.put(("event", event))
+
+    async def worker():
+        try:
+            await queue.put(("done", await work(emit)))
+        except ValueError as exc:
+            await queue.put(("error", {"detail": str(exc)}))
+        except Exception as exc:
+            log.exception("optimizer phase failed")
+            await queue.put(("error", {"detail": f"{type(exc).__name__}: {exc}"}))
+
+    asyncio.create_task(worker())
+
+    async def gen():
+        while True:
+            kind, payload = await queue.get()
+            yield f"event: {kind}\ndata: {json.dumps(payload, default=str)}\n\n"
+            if kind in ("done", "error"):
+                break
+
+    return StreamingResponse(gen(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
+
+
+def _opt_or_404(oid: str) -> dict:
+    rec = state.optimizer.get(oid)
+    if not rec:
+        raise HTTPException(404, "optimization not found")
+    return rec
+
+
+def _export_opt(oid: str) -> None:
+    try:
+        out = results_dir()
+        out.mkdir(parents=True, exist_ok=True)
+        (out / f"optimization-{oid}-{state.provider.name}.json").write_text(
+            json.dumps(export_bundle(state.store, "optimization", oid), indent=2, default=str))
+    except Exception:  # the DB record is authoritative
+        log.exception("could not export optimization")
+
+
+def _locked(oid: str, phase):
+    lock = state.optimizer.lock(oid)
+    if lock.locked():
+        raise HTTPException(409, "another phase of this optimization is running")
+
+    async def work(emit):
+        async with lock:
+            st = await phase(emit)
+            _export_opt(oid)
+            return st
+    return _sse(work)
+
+
+@app.get("/api/optimize/workloads")
+async def optimize_workloads():
+    return {"workloads": preset_workloads(), "analyst_model": state.settings.analyst_model,
+            "baseline": {"tier": state.settings.baseline_tier, "model_id": state.settings.tier_map[state.settings.baseline_tier].model_id},
+            **_sample_flag()}
+
+
+@app.post("/api/optimize/sessions", dependencies=[Depends(rate_limit)])
+async def optimize_create(body: dict):
+    """Create a session from a preset id or an uploaded list of cases. Free: nothing runs yet."""
+    if body.get("preset"):
+        wl = next((w for w in preset_workloads() if w["id"] == body["preset"]), None)
+        if not wl:
+            raise HTTPException(404, "unknown preset workload")
+    else:
+        try:
+            cases = validate_upload(body.get("cases"), state.settings)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+        wl = {"id": "upload", "title": str(body.get("title") or "Uploaded workload")[:80], "source": "upload",
+              "description": "Uploaded by the user.", "cases": cases}
+    return state.optimizer.create(wl)["state"]
+
+
+@app.get("/api/optimize/sessions")
+async def optimize_list(limit: int = 20):
+    items = [{"id": r["id"], "created_at": r["created_at"], "status": r["status"], "title": r["title"], "provider": r["provider"],
+              "summary": _opt_summary(r["state"])} for r in state.store.list_optimizations(min(limit, 100))]
+    return {"items": items, **_sample_flag()}
+
+
+def _opt_summary(st: dict) -> dict:
+    rec = st.get("recommendation") or {}
+    return {"tasks": len(st.get("workload", {}).get("cases", [])), "rounds": len(st.get("rounds") or []),
+            "cost_rel": (rec.get("gate") or {}).get("deltas", {}).get("cost_rel"),
+            "drill_rejected": bool(st.get("drill") and st["drill"].get("gate") and not st["drill"]["gate"]["accepted"])}
+
+
+@app.get("/api/optimize/sessions/{oid}")
+async def optimize_get(oid: str):
+    return _opt_or_404(oid)["state"]
+
+
+@app.post("/api/optimize/sessions/{oid}/baseline", dependencies=[Depends(require_access), Depends(rate_limit)])
+async def optimize_baseline(oid: str):
+    _opt_or_404(oid)
+    return _locked(oid, lambda emit: state.optimizer.run_baseline(oid, emit))
+
+
+@app.post("/api/optimize/sessions/{oid}/analyze", dependencies=[Depends(require_access), Depends(rate_limit)])
+async def optimize_analyze(oid: str):
+    if not _opt_or_404(oid)["state"].get("baseline"):
+        raise HTTPException(409, "run the baseline first")
+    return _locked(oid, lambda emit: state.optimizer.analyze(oid, emit))
+
+
+@app.post("/api/optimize/sessions/{oid}/verify", dependencies=[Depends(require_access), Depends(rate_limit)])
+async def optimize_verify(oid: str, body: dict):
+    st = _opt_or_404(oid)["state"]
+    if not st.get("analysis"):
+        raise HTTPException(409, "run the analysis first")
+    ids = [str(i) for i in body.get("proposal_ids") or []]
+    if not ids:
+        raise HTTPException(422, "select at least one proposal to test")
+    rounds = int(body.get("max_rounds") or 2)
+    drill = bool(body.get("safety_drill", True))
+    return _locked(oid, lambda emit: state.optimizer.verify(oid, ids, emit, max_rounds=rounds, safety_drill=drill))
+
+
+@app.post("/api/optimize/sessions/{oid}/decision", dependencies=[Depends(require_access)])
+async def optimize_decision(oid: str, body: dict):
+    _opt_or_404(oid)
+    try:
+        st = state.optimizer.decide(oid, str(body.get("decision")), str(body.get("note") or ""))
+    except ValueError as exc:
+        raise HTTPException(409, str(exc))
+    _export_opt(oid)
+    return st
+
+
+@app.get("/api/optimize/sessions/{oid}/export")
+async def optimize_export(oid: str):
+    _opt_or_404(oid)
+    return state.optimizer.export(oid)
+
+
 @app.get("/api/challenges")
 async def list_challenges(limit: int = 20):
     return {"items": state.store.list_challenges(min(limit, 100)), **_sample_flag()}
@@ -355,7 +503,7 @@ async def get_challenge(cid: str):
 @app.get("/api/bundles/{kind}/{rid}")
 async def get_bundle(kind: str, rid: str):
     """Portable export of a benchmark run or challenge with full workload records (commit to benchmarks/results/)."""
-    if kind not in ("benchmark", "challenge"):
+    if kind not in ("benchmark", "challenge", "optimization"):
         raise HTTPException(404, "unknown kind")
     try:
         return export_bundle(state.store, kind, rid)

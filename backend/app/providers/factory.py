@@ -14,5 +14,15 @@ def build_provider(settings: Settings):
             max_retries=settings.max_retries,
         )
     if settings.provider == "mock":
-        return MockProvider({t.model_id: t.rank for t in settings.tiers})
+        mock = MockProvider({t.model_id: t.rank for t in settings.tiers})
+        try:  # let the offline UI show plausible passes on EcoBench tasks (still labelled sample data)
+            from app.benchmark.runner import load_dataset
+            from app.providers.mock import reference_answer
+            for case in load_dataset()["cases"]:
+                ans = reference_answer(case)
+                if ans is not None:
+                    mock.register_answer(case["task"][:160], ans)
+        except Exception:  # pragma: no cover - dataset missing in a stripped image
+            pass
+        return mock
     raise ValueError(f"Unknown provider {settings.provider!r}")

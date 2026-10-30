@@ -100,6 +100,11 @@ export function streamChallenge(scenarioId: string, onEvent: (e: any) => void, s
   return streamPost(`/api/challenge/${encodeURIComponent(scenarioId)}/stream`, undefined, onEvent, signal);
 }
 
+/** Run one phase of an optimization session (baseline | analyze | verify); streams its events, resolves with the new state. */
+export function streamOptimize(id: string, phase: "baseline" | "analyze" | "verify", body: unknown, onEvent: (e: any) => void, signal?: AbortSignal): Promise<any> {
+  return streamPost(`/api/optimize/sessions/${encodeURIComponent(id)}/${phase}`, body, onEvent, signal);
+}
+
 async function streamPost(path: string, body: unknown, onEvent: (e: any) => void, signal?: AbortSignal): Promise<any> {
   const res = await fetch(apiBase() + path, {
     method: "POST",

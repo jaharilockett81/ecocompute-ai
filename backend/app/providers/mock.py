@@ -46,18 +46,23 @@ class MockProvider:
         content = self._respond(prompt, rank)
         prompt_tokens = max(1, len(prompt) // 4)
         completion_tokens = max(1, len(content) // 4) + 40 * rank  # larger models "think" more
+        finish = "stop"
+        if completion_tokens > max_tokens:  # honour the output cap like a real endpoint
+            content, completion_tokens, finish = content[: max(0, (max_tokens - 40 * rank) * 4)], max_tokens, "length"
         digest = hashlib.sha1(f"{model}{prompt}".encode()).hexdigest()
         latency = 300.0 + 450.0 * rank + int(digest[:3], 16) % 200
         return ChatResult(
             ok=True, model=model, content=content, prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens, total_tokens=prompt_tokens + completion_tokens,
-            latency_ms=float(latency), finish_reason="stop", provider="mock",
+            latency_ms=float(latency), finish_reason=finish, provider="mock",
             request_id=f"mock-{digest[:12]}",
         )
 
     def _respond(self, prompt: str, rank: int) -> str:
         if "You are an impartial grader" in prompt:
             return json.dumps({"score": 4, "rationale": "mock judge"})
+        if "You are EcoCompute's optimization analyst" in prompt:
+            return self._analyst(prompt)
         answer = next((a for frag, a in self._answers.items() if frag in prompt), None)
         wants_json = "json" in prompt.lower()
         if rank == 0 and wants_json:
@@ -69,3 +74,39 @@ class MockProvider:
         if wants_json:
             return json.dumps({"result": "ok"})
         return "Mock response: this is sample output from the offline provider."
+
+    @staticmethod
+    def _analyst(prompt: str) -> str:
+        """Scripted analyst: route every category to the small tier with escalation, one refusal-worthy item."""
+        line = next((l for l in prompt.splitlines() if l.startswith("CATEGORIES: ")), "CATEGORIES: ")
+        cats = [c for c in line.removeprefix("CATEGORIES: ").split(",") if c]
+        props = []
+        for i, c in enumerate(cats):
+            props.append({"id": f"p{2 * i + 1}", "type": "route_category", "category": c, "tier": "small",
+                          "rationale": "mock analyst (sample data)", "evidence": "mock", "expected_effect": "lower cost", "risk": "quality"})
+            props.append({"id": f"p{2 * i + 2}", "type": "enable_escalation", "category": c, "enabled": True,
+                          "rationale": "mock analyst (sample data)", "evidence": "mock", "expected_effect": "recover failures", "risk": "extra calls"})
+        return json.dumps({"diagnosis": [{"finding": "Mock diagnosis (sample data): every task runs on the largest tier.",
+                                          "evidence": "mock", "categories": cats}],
+                           "proposals": props, "next_action": "Test the proposals against the baseline."})
+
+
+def reference_answer(case: dict) -> str | None:
+    """Correct answer derivable from a case's checks (mock provider only, for UI development)."""
+    for ch in case.get("checks", []):
+        if ch.get("type") == "json_fields":
+            out: dict = {}
+            for path, v in ch["expected"].items():
+                cur = out
+                parts = path.split(".")
+                if any(p.isdigit() for p in parts):
+                    return None
+                for p in parts[:-1]:
+                    cur = cur.setdefault(p, {})
+                cur[parts[-1]] = v
+            return json.dumps(out)
+        if ch.get("type") in ("label", "exact"):
+            return str(ch["answer"])
+        if ch.get("type") == "numeric":
+            return str(ch["answer"])
+    return None

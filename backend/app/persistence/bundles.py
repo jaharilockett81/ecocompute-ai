@@ -27,6 +27,9 @@ def export_bundle(store: Store, kind: str, rid: str) -> dict:
     elif kind == "challenge":
         record = store.get_challenge(rid)
         wids = [w for w in (record.get("ecocompute_workload_id"), record.get("baseline_workload_id")) if w] if record else []
+    elif kind == "optimization":
+        record = store.get_optimization(rid)
+        wids = [w["id"] for w in store.workloads_for_run(rid)] if record else []
     else:
         raise ValueError(kind)
     if not record:
@@ -44,11 +47,11 @@ def _insert(store: Store, table: str, row: dict) -> None:
 
 def import_bundle(store: Store, bundle: dict, only_provider: str | None = "nebius") -> bool:
     kind, rec = bundle.get("kind"), dict(bundle.get("record") or {})
-    if kind not in ("benchmark", "challenge") or not rec.get("id"):
+    if kind not in ("benchmark", "challenge", "optimization") or not rec.get("id"):
         return False
     if only_provider and rec.get("provider") != only_provider:
         return False
-    exists = store.get_run(rec["id"]) if kind == "benchmark" else store.get_challenge(rec["id"])
+    exists = {"benchmark": store.get_run, "challenge": store.get_challenge, "optimization": store.get_optimization}[kind](rec["id"])
     if exists:
         return False
     for w in bundle.get("workloads") or []:
@@ -66,9 +69,12 @@ def import_bundle(store: Store, bundle: dict, only_provider: str | None = "nebiu
             if k in rec:
                 rec[f"{k}_json"] = rec.pop(k)
         _insert(store, "benchmark_runs", rec)
-    else:
+    elif kind == "challenge":
         rec["comparison_json"] = rec.pop("comparison", None)
         _insert(store, "challenges", rec)
+    else:
+        rec["state_json"] = rec.pop("state", None)
+        _insert(store, "optimizations", rec)
     return True
 
 

@@ -105,6 +105,17 @@ CREATE TABLE IF NOT EXISTS challenges (
     comparison_json TEXT,
     error TEXT
 );
+
+CREATE TABLE IF NOT EXISTS optimizations (
+    id TEXT PRIMARY KEY,
+    created_at REAL NOT NULL,
+    updated_at REAL,
+    status TEXT NOT NULL,
+    provider TEXT,
+    title TEXT,
+    state_json TEXT,
+    error TEXT
+);
 """
 
 
@@ -295,10 +306,30 @@ class Store:
     def list_challenges(self, limit: int = 20) -> list[dict]:
         return [_deser_challenge(r) for r in self._all("SELECT * FROM challenges ORDER BY created_at DESC LIMIT ?", (limit,))]
 
+    # ----------------------------------------------------------- optimizations
+    def create_optimization(self, *, provider: str, title: str, state: dict) -> str:
+        oid = new_id()
+        now = time.time()
+        self._exec("INSERT INTO optimizations (id, created_at, updated_at, status, provider, title, state_json) VALUES (?,?,?,?,?,?,?)",
+                   (oid, now, now, state.get("status", "created"), provider, title, _ser(state)))
+        return oid
+
+    def save_optimization(self, oid: str, state: dict, error: str | None = None) -> None:
+        self._exec("UPDATE optimizations SET state_json=?, status=?, updated_at=?, error=? WHERE id=?",
+                   (_ser(state), state.get("status"), time.time(), error, oid))
+
+    def get_optimization(self, oid: str) -> dict | None:
+        row = self._one("SELECT * FROM optimizations WHERE id=?", (oid,))
+        return _deser_optimization(row) if row else None
+
+    def list_optimizations(self, limit: int = 20) -> list[dict]:
+        return [_deser_optimization(r) for r in self._all("SELECT * FROM optimizations ORDER BY created_at DESC LIMIT ?", (limit,))]
+
     def mark_interrupted_runs(self) -> None:
         self._exec("UPDATE benchmark_runs SET status='failed', error='Server restarted during run' WHERE status IN ('queued','running')")
         self._exec("UPDATE challenges SET status='failed', error='Server restarted during run' WHERE status='running'")
         self._exec("UPDATE workloads SET status='error' WHERE status='running'")
+        self._exec("UPDATE optimizations SET status='interrupted', error='Server restarted during a phase' WHERE status LIKE '%running'")
 
 
 def _ser(v: Any) -> Any:
@@ -330,4 +361,13 @@ def _deser_run(row: dict) -> dict:
 def _deser_challenge(row: dict) -> dict:
     raw = row.pop("comparison_json", None)
     row["comparison"] = json.loads(raw) if raw else None
+    return row
+
+
+def _deser_optimization(row: dict) -> dict:
+    row = dict(row)
+    raw = row.pop("state_json", None)
+    row["state"] = json.loads(raw) if raw else {}
+    if row.get("status") == "interrupted":
+        row["state"]["status"] = "interrupted"
     return row

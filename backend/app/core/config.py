@@ -101,6 +101,7 @@ class Settings:
     min_start_pass: float
     database_path: str
     data_dir: Path = field(default=Path("."))
+    analyst_model: str = ""  # Nemotron model that diagnoses workloads and proposes optimizations
 
     @property
     def tier_map(self) -> dict[str, ModelTier]:
@@ -132,6 +133,7 @@ class Settings:
             ],
             "router_model": self.router_model,
             "judge_model": self.judge_model,
+            "analyst_model": self.analyst_model,
             "baseline_tier": self.baseline_tier,
             "max_output_tokens": self.max_output_tokens,
             "temperature": self.temperature,
@@ -219,6 +221,7 @@ def load_settings() -> Settings:
         min_start_pass=_float("ECOCOMPUTE_MIN_START_PASS", 0.5),
         database_path=os.environ.get("ECOCOMPUTE_DB_PATH", str(data_dir / "ecocompute.db")),
         data_dir=data_dir,
+        analyst_model=os.environ.get("NEBIUS_ANALYST_MODEL", tiers[min(1, len(tiers) - 1)].model_id),
     )
 
 

@@ -9,6 +9,7 @@ import Logo from "./Logo";
 
 const LINKS = [
   { href: "/", label: "Overview", icon: "home" },
+  { href: "/optimize", label: "Optimize", icon: "bolt" },
   { href: "/challenge", label: "Challenge", icon: "flag" },
   { href: "/playground", label: "Playground", icon: "play" },
   { href: "/router", label: "Model Router", icon: "router" },
