@@ -2,6 +2,43 @@
 
 This audit separates what is implemented and tested from what depends on credentials or infrastructure. Nothing here claims a result that has not been run.
 
+## Grand-prize audit (2026-10-30, skeptical-judge pass)
+
+Scored on the evidence in this repository today, not on what it might become. These are not predictions of the outcome.
+
+| Criterion | Score | Strongest evidence | Largest weakness | Single best improvement |
+| --- | --- | --- | --- | --- |
+| Technological implementation | **4** | Real Nebius runs with request IDs; deterministic validators, bounded escalation, allowlisted agent actions, independent gate, budgets and rate limits; 68 tests; offline verifier (`scripts/verify_benchmark.py`) PASS | No public deployment yet; the agent loop has one real workload run | A public URL that runs a real call end to end |
+| Design | **4** | One coherent system across 10 screens, light and dark, AA contrast, phone width, every state (empty, loading, error, sample data) labelled | Dense tables on the Benchmark page; judges must read to get the point | A video that shows the three numbers (cost, losses, latency) before any table |
+| Potential impact | **4** | Held-out: −81% cost [−93, −66], 0 of 35 tasks lost, replicated (−69 to −73%) | Latency is worse (+62–72% mean); 35 tasks from one team-authored dataset; prices are configured, not billed | Fixed Nano/Super on the same held-out tasks, so the gain over "just use a cheaper model" is measured, not argued |
+| Quality of idea | **3–4** | Validator-triggered escalation plus a Nemotron analyst that can only propose bounded, measured, human-approved changes | Model cascades and LLM routers already exist (e.g. FrugalGPT-style cascades, commercial routers). The novelty is the verification and evidence layer, not routing itself | Say this plainly in the README and video, and show the gate rejecting a bad change |
+
+### Objections a skeptical judge will raise
+
+| Objection | Answer, with evidence | Residual risk |
+| --- | --- | --- |
+| "An attractive LLM wrapper." | Routing, validation, escalation, the gate and the budget are deterministic code (`router/engine.py`, `evaluation/`, `optimizer.gate`), tested without a network. Nemotron does the work and proposes changes, but cannot accept them. | Low |
+| "Is NVIDIA central?" | The method relies on a model family with a cost-capability ladder: Nano, Super and Ultra are the three rungs, and all inference ran on them via Nebius. | Low |
+| "Are the benchmarks defensible?" | Calibration and held-out splits are disjoint and leakage is checked by script. Results come with Wilson CIs, paired bootstrap CIs, per-task gains and losses, every failure, a replicate run, and the observed temperature-0 non-determinism. | Medium: n=35, one dataset, authored by us |
+| "Could a simpler baseline do the same?" | On calibration, always-Super lost nothing at −76% cost. On the held-out set, one task (sum-03) failed on both Nano and Super and passed only after escalation to Ultra, which a fixed cheaper model can't do. The matched held-out run of fixed Nano/Super is **pending**. | **High until that run lands** |
+| "Environmental savings overstated?" | Energy is category B: a FLOPs estimate with low/central/high bounds, labelled "estimate, not a measurement". GPU power is category C, not observable. Savings claims use measured cost only. | Low |
+| "Reliable?" | Retries with backoff, timeouts, a daily budget, per-workload budget, call caps, and runs marked interrupted on restart; 68 tests. | Medium: not yet load-tested on a public host |
+| "Can judges inspect the evidence?" | Bundles are committed, with every call, token count, request ID and validator verdict. The hosted app imports them at startup. The verifier needs no key. | Low |
+| "Accessible?" | Text contrast ≥ 5:1 in both themes, visible focus rings, labelled controls, reduced-motion support. | Low–medium: no screen-reader pass |
+| "Is the demo convincing?" | The script answers the five questions with measured numbers and shows a live call, the gate and the safety drill. | High until the URL and video exist |
+
+### Eligibility and submission checklist
+
+| Item | Status |
+| --- | --- |
+| Uses NVIDIA Nemotron via Nebius Token Factory | ☑ verified live (verify_nebius PASS; all benchmark calls report Nemotron model IDs and provider nebius) |
+| Public code repository, open-source license | ☑ github.com/jaharilockett81/ecocompute-ai, MIT |
+| Working public demo URL | ☐ waiting on the Render + Vercel deploy |
+| Video under 3 minutes, public | ☐ script and recording plan ready in docs/submission.md |
+| Devpost text | ◐ written from real results; app and video links missing |
+| Testing instructions plus judge access code | ◐ instructions written; the code is set when deploying |
+| No secrets in repo, logs or screenshots | ☑ the key is read from the environment only; the API exposes only `api_key_configured: true/false`; redaction tested |
+
 ## 0. Final upgrade pass (design, Benchmark Lab, submission)
 
 | Change | Evidence |
