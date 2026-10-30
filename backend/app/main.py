@@ -143,6 +143,12 @@ def _sample_flag() -> dict:
 
 
 # ------------------------------------------------------------------ health / config
+@app.get("/", include_in_schema=False)
+async def root():
+    return {"service": "EcoCompute AI API", "provider": state.provider.name, "health": "/health", "docs": "/docs",
+            "ui": "Run the Next.js frontend (cd frontend && npm run dev) and open http://localhost:3000/optimize"}
+
+
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": VERSION, **_sample_flag()}
