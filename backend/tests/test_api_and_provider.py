@@ -50,6 +50,10 @@ def test_access_code_and_rate_limit(settings, mock_provider):
         assert c.post("/api/workloads", json=body, headers=h).status_code == 200
         assert c.post("/api/workloads", json=body, headers=h).status_code == 200
         assert c.post("/api/workloads", json=body, headers=h).status_code == 429
+        assert c.post("/api/workloads", json=body, headers={"X-Access-Code": "judge-2027"}).status_code == 401
+        # spoofing X-Forwarded-For dodges the per-client window but not the global one
+        codes = [c.post("/api/workloads", json=body, headers={**h, "X-Forwarded-For": f"10.0.0.{i}"}).status_code for i in range(12)]
+        assert codes.count(200) == 2 * main.GLOBAL_RATE_MULTIPLIER - 2 and codes[-1] == 429
         # free, read-only endpoints stay open
         assert c.get("/api/overview").status_code == 200
         assert c.post("/api/router/preview", json={"task": "classify this ticket"}).status_code == 200

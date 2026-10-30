@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import asyncio
+import hmac
 import json
 import statistics
 import time
@@ -106,21 +107,34 @@ async def limit_body(request: Request, call_next):
 
 
 # ------------------------------------------------------------------ guards
+GLOBAL_RATE_MULTIPLIER = 4
+
+
 def require_access(x_access_code: str | None = Header(default=None)) -> None:
     code = state.settings.demo_access_code
-    if code and x_access_code != code:
+    if code and not hmac.compare_digest((x_access_code or "").encode(), code.encode()):
         raise HTTPException(401, "This action runs paid inference. Enter the demo access code (see the submission's testing instructions).")
 
 
-def rate_limit(request: Request) -> None:
-    ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "?")
-    window = state.hits[ip]
-    now = time.time()
+def _take(window: deque, limit: int, now: float) -> bool:
     while window and now - window[0] > 60:
         window.popleft()
-    if len(window) >= state.settings.rate_limit_per_minute:
-        raise HTTPException(429, f"Rate limit: {state.settings.rate_limit_per_minute} paid requests per minute.")
+    if len(window) >= limit:
+        return False
     window.append(now)
+    return True
+
+
+def rate_limit(request: Request) -> None:
+    # The per-client key comes from X-Forwarded-For, which a client can spoof, so a
+    # global window across all clients backs it up; the daily budget is the hard stop.
+    ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip() or (request.client.host if request.client else "?")
+    now = time.time()
+    per_ip = state.settings.rate_limit_per_minute
+    if not _take(state.hits[ip], per_ip, now):
+        raise HTTPException(429, f"Rate limit: {per_ip} paid requests per minute.")
+    if not _take(state.hits["*global*"], per_ip * GLOBAL_RATE_MULTIPLIER, now):
+        raise HTTPException(429, "The demo is busy: too many paid requests across all users this minute. Try again shortly.")
 
 
 def _spec_from(req: WorkloadRequest) -> WorkloadSpec:
