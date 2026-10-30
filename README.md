@@ -7,7 +7,7 @@ EcoCompute measures a recurring AI workload, has **NVIDIA Nemotron (via Nebius T
 > Coding & Agentic Engineering track · MIT license · [Engineering audit](docs/AUDIT.md) · [Results](docs/RESULTS.md) · [Methodology](docs/methodology.md)
 
 <!-- TODO before submission: hosted demo URL and YouTube link. -->
-- **Live demo:** _TBD_
+- **Live demo:** https://ecocompute-ai.vercel.app (API: https://ecocompute-api.onrender.com; free tier, the first request after idle takes about a minute)
 - **Demo video (< 3 min):** _TBD_
 
 **Who it is for:** ML engineers and small AI teams that run the same LLM jobs every day (ticket triage, extraction, ETL enrichment, eval suites) and send all of it to their biggest model because they cannot tell which tasks a smaller one would get right.

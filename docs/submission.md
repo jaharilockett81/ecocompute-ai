@@ -44,7 +44,7 @@ Learned per-customer evidence, more validators, multi-provider tiers, and a drop
 nvidia-nemotron, nebius-token-factory, python, fastapi, sqlite, next.js, react, typescript, tailwind, render, vercel
 
 ### Try it
-- App: TBD (access code for paid calls: in the testing instructions)
+- App: https://ecocompute-ai.vercel.app (access code for paid calls: in the testing instructions)
 - Code: https://github.com/jaharilockett81/ecocompute-ai (MIT)
 - Video: TBD
 
