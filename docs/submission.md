@@ -51,19 +51,31 @@ nvidia-nemotron, nebius-token-factory, python, fastapi, sqlite, next.js, react, 
 ### Platform feedback (Nebius Token Factory)
 The OpenAI-compatible API made the integration quick, and usage includes reasoning tokens, which matter: most Nemotron completion tokens on our tasks were reasoning (e.g. 8,441 of 10,241 for Ultra on the held-out set). The serverless endpoints expose no GPU or power telemetry, so energy has to be estimated. Per-call latency varied by model in ways we did not expect (Nano slower than Ultra on our runs).
 
-## Demo video script (under 3 minutes)
+## Demo video (under 3 minutes): script and recording plan
 
-Record against the real Nebius backend (the sidebar card must read "Nebius", not "Mock provider"). Hide the terminal and `.env`; no key may appear on screen. Numbers below are from run `b75c45c2fcc1431f` (docs/TRACE.md); if you re-run live, say the numbers the screen shows, not these.
+The script answers the five questions in order. Every number is from a committed Nebius bundle. If you run something live during recording, read what the screen shows instead.
 
-| Time | Show | Say |
-| --- | --- | --- |
-| 0:00–0:20 | **Problem.** Overview hero | "Teams send every recurring AI job to their biggest model. That is wasted compute, and nobody can prove which jobs could use less. EcoCompute makes that waste measurable, correctable and independently verifiable, without giving up required quality." |
-| 0:20–0:45 | **Architecture.** Methodology → section 1, then Model Router cards | "Nemotron Nano, Super and Ultra on Nebius Token Factory. Nemotron proposes; deterministic validators decide; a person signs off. The model can touch only three knobs." |
-| 0:45–1:20 | **Live routing and verification.** Optimize → Support ops → Run baseline → Run Nemotron analysis → review → Approve test | "Eight real tasks on Ultra: 7 of 8 pass. Nemotron Super reads the measured profile and proposes moving classification and extraction to Super with token caps. I approve the test; the gate re-runs the same tasks and checks for any per-task regression." |
-| 1:20–1:50 | **Baseline and benchmark.** Before/after card, then Benchmarks → held-out run (if completed) | "Same quality, 7 of 8, no task lost. Cost down 64 percent. But it was 33 percent slower, and we say so." Held-out run: read the paired outcomes column (gains and losses per task), not just the pass rates. If the held-out run isn't done, skip that part and don't mention it. |
-| 1:50–2:15 | **Safety.** Safety drill card (labelled safety test) | "This is a safety test. We inject two bad proposals. A shell command is refused before it runs. A 16-token cap passes the schema, so we run it, and the gate rejects it: 0 of 8 pass. The LLM can never override a failing validator." |
-| 2:15–2:40 | **Impact.** Impact page | "A is measured: tokens, cost, latency. B is an estimate with low, central and high bounds, never a power reading. C is what an API can't show: GPU utilisation and power. The analysis paid for itself after about two runs." |
-| 2:40–2:55 | **Close.** Decision → Accept → Export, then the README | "Nothing changes until a person accepts. Open source, MIT licensed, and every number links to a provider request ID." |
+| Time | Question | Show | Say |
+| --- | --- | --- | --- |
+| 0:00–0:20 | **1. The problem** | Overview hero | "Most teams send every AI request to their biggest model, because nobody can tell in advance which requests a smaller model would get right. On our held-out tasks, that habit cost five times more than it needed to." |
+| 0:20–0:45 | **2. Why existing options fall short** | Model Router cards, then the Benchmarks calibration run | "Just picking a cheaper model is a guess. On calibration, Nano was 94 percent cheaper but lost tasks, and Super was safe but still four times Nano's price. Profilers show cost but not quality. Routers pick a model but can't prove they didn't break anything." |
+| 0:45–1:20 | **3. What's new** | Methodology section 1, then Playground: run one preset live and show the trace (start tier, validator verdict, escalation) | "EcoCompute keeps a Bayesian estimate of whether each Nemotron model passes each kind of task. It starts on the cheapest model likely to pass, checks the answer with a deterministic validator, and escalates only when the check fails. For recurring jobs, Nemotron Super acts as the analyst, but it can only touch three knobs, and a gate re-runs the tasks before a person approves anything." |
+| 1:20–1:55 | **4. What the experiments showed** | Benchmarks → run 1c62f1ef: results table, paired comparison, quality failures | "35 held-out tasks that the router never saw. Always-Ultra passed 33. Adaptive routing passed 34, lost none of Ultra's tasks, and cost 81 percent less, with a 95 percent interval of 66 to 93. A second run gave 69 to 73 percent. The tradeoff: it's slower, with median 1.6 seconds instead of 1.1, because Nano is slow per call here and escalations add calls. Tokens didn't fall; the saving comes from price." |
+| 1:55–2:20 | **Safety** | Optimize → safety drill card (labelled safety test) | "This is a safety test. We inject a shell command: it's refused before it runs. We inject a 16-token cap: it's allowed by the schema, so we run it, and the gate rejects it because 0 of 8 tasks pass. The language model can never override a failing validator." |
+| 2:20–2:45 | **5. Why it matters** | Impact page: A measured, B estimate with bounds, C not observable | "For NVIDIA and Nebius customers, this turns a model family into a cost curve you can safely move along. Cost and tokens are measured. Energy is an estimate with low and high bounds, never a power reading. GPU power isn't observable through an API, and we say so." |
+| 2:45–2:58 | Close | README, verify_benchmark.py PASS in a terminal | "Open source, MIT. Every number traces to a provider request ID, and one offline script re-checks the evidence." |
+
+When the fixed Nano and Super held-out run is in, replace the 0:20–0:45 calibration numbers with the held-out ones (docs/BENCHMARK.md).
+
+### Recording plan
+
+1. **Before recording.** Open the public backend URL `/health` once to wake the free Render instance (cold start is about a minute). Enter the access code in Settings. Close other tabs. Hide the bookmarks bar.
+2. **Screen.** Use a browser window around 1440×900 with zoom at 110–125% so table text is readable on YouTube at 1080p. Record in light mode, with one 3-second cut to dark mode on the Overview.
+3. **Capture.** Use QuickTime (File → New Screen Recording) or OBS at 1080p, 30 fps. Record each row as its own clip, so a mistake costs one clip, not the whole take.
+4. **Narration.** Record the voice separately from the script above, then lay it over the clips in iMovie or CapCut. Aim for about 150 words a minute. The script is about 420 words, so it fits in 2:55.
+5. **Live call.** The Playground run in row 3 is the live Nebius inference. Use the "Routine classification" preset; it costs a fraction of a cent.
+6. **Secrets.** Never show `.env`, the Render environment page, or a terminal holding the key. The access code may appear only if it's the judge code in the testing instructions.
+7. **Upload.** Upload to YouTube as Public or Unlisted with the title "EcoCompute AI: evidence-driven routing for NVIDIA Nemotron on Nebius". Paste the link into Devpost and the README.
 
 ## Testing instructions for judges
 1. Open the app URL. The provider card at the bottom of the sidebar should read "Nebius" (if it reads "Mock provider", the backend has no key and everything is labelled sample data).
