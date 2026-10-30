@@ -3,7 +3,9 @@
 import { useMemo } from "react";
 import { useApi } from "@/lib/useApi";
 import { ms, pct, usd } from "@/lib/format";
-import { BackendHint, Card, ErrorBox, KV, Loading, PageHeader, SampleBanner, TierBadge } from "@/components/ui";
+import { BackendHint, Card, ErrorBox, KV, Loading, PageHeader, SampleBanner, TierBadge, tierColor } from "@/components/ui";
+
+const ROLE: Record<string, string> = { small: "lower-cost tasks", medium: "intermediate tasks", large: "highest capability · escalation" };
 
 function cellBg(p: number) {
   // green intensity by posterior pass probability
@@ -24,7 +26,7 @@ export default function RouterPage() {
   return (
     <div>
       <PageHeader
-        title="Router"
+        title="Model Router"
         subtitle="The routing policy keeps a Beta posterior over P(pass) for every (category, tier). A heuristic prior is updated with observed quality-gate outcomes, then the router picks the start tier whose whole escalation chain has the lowest expected cost while still meeting the quality target."
       />
       <ErrorBox error={error} hint={<BackendHint />} />
@@ -33,33 +35,24 @@ export default function RouterPage() {
 
       {cfg && (
         <div className="mb-4 grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <Card title="Model tiers">
-            <div className="overflow-x-auto"><table className="data">
-              <thead>
-                <tr>
-                  <th>Tier</th>
-                  <th>Model ID</th>
-                  <th className="num">Active params</th>
-                  <th className="num">$ / 1M in · out</th>
-                </tr>
-              </thead>
-              <tbody>
-                {tiers.map((t) => (
-                  <tr key={t.key}>
-                    <td>
-                      <TierBadge tier={t.key} label={t.label} />
-                    </td>
-                    <td>
-                      <code className="text-xs">{t.model_id}</code>
-                    </td>
-                    <td className="num">{t.active_params_b ? `${t.active_params_b}B` : "—"}</td>
-                    <td className="num">
-                      {t.price_in_per_m != null ? `$${t.price_in_per_m} · $${t.price_out_per_m}` : "not set"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table></div>
+          <Card title="Model tiers" subtitle="Routing roles, not performance guarantees. Prices are the configured per-token rates.">
+            <ul className="space-y-3">
+              {tiers.map((t) => (
+                <li key={t.key} className="flex items-start gap-3 rounded-2xl border border-border px-4 py-3">
+                  <span className="mt-1.5 inline-block h-3 w-3 shrink-0 rounded-full" style={{ background: tierColor(t.key) }} />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                      <span className="font-medium">{t.label}</span>
+                      <span className="text-xs text-muted">{ROLE[t.key] || ""}{t.key === cfg.baseline_tier ? " · baseline" : ""}</span>
+                    </div>
+                    <div className="mt-0.5 text-sm text-muted">
+                      {t.active_params_b ? `${t.active_params_b}B active` : "params n/a"} · {t.price_in_per_m != null ? `$${t.price_in_per_m} in · $${t.price_out_per_m} out per 1M` : "price not set"}
+                    </div>
+                    <code className="mt-1 block truncate text-xs text-muted">{t.model_id}</code>
+                  </div>
+                </li>
+              ))}
+            </ul>
           </Card>
           <Card title="Policy settings">
             <KV

@@ -296,8 +296,8 @@ async def get_benchmark(rid: str):
     run = state.store.get_run(rid)
     if not run:
         raise HTTPException(404, "run not found")
-    if run["status"] in ("queued", "running"):
-        run["summary"] = state.bench.summarize(rid)
+    # Always derived from the stored workload records, so reports pick up newer metrics for older runs.
+    run["summary"] = state.bench.summarize(rid)
     return run
 
 

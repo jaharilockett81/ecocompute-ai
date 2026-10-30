@@ -70,32 +70,35 @@ export default function Nav() {
   return (
     <>
       {/* desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col border-r border-border bg-sidebar md:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-border bg-sidebar md:flex">
         <Link href="/" className="flex items-center gap-2.5 px-6 pb-6 pt-7">
           <Logo size={28} />
-          <span className="text-xl font-semibold tracking-tight">EcoCompute</span>
+          <span className="display text-[22px]">EcoCompute</span>
         </Link>
         <nav className="flex-1 space-y-1 px-3">
           {LINKS.map((l) => (
             <Link
               key={l.href}
               href={l.href}
-              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-[15px] ${active(l.href) ? "bg-accent-soft font-medium text-accent-strong" : "text-fg/80 hover:bg-panel-2"}`}
+              aria-current={active(l.href) ? "page" : undefined}
+              className={`flex items-center gap-3 rounded-full px-4 py-2 text-[14.5px] transition-colors ${active(l.href) ? "bg-accent-soft font-medium text-accent-strong" : "text-fg/75 hover:bg-panel-2 hover:text-fg"}`}
             >
               <Icon name={l.icon} className={active(l.href) ? "text-accent" : "text-muted"} />
               {l.label}
             </Link>
           ))}
         </nav>
-        <div className="space-y-4 border-t border-border px-5 py-5">
-          <div className="flex gap-2.5">
-            <span className="mt-1.5 inline-block h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: st.tone }} />
-            <div className="text-sm">
-              <div className="font-medium">Provider Status</div>
-              <div style={{ color: st.tone }}>{st.title}</div>
+        <div className="space-y-3 px-4 py-5">
+          <Link href="/settings" className="card flex gap-3 rounded-2xl px-4 py-3 hover:border-border-strong" aria-label={`Provider status: ${st.title}. Open settings`}>
+            <span className="relative mt-1 inline-flex h-2.5 w-2.5 shrink-0">
+              <span className="absolute inline-flex h-full w-full rounded-full opacity-30" style={{ background: st.tone, transform: "scale(1.9)" }} />
+              <span className="relative inline-block h-2.5 w-2.5 rounded-full" style={{ background: st.tone }} />
+            </span>
+            <div className="min-w-0 text-sm leading-snug">
+              <div className="font-medium">{st.title}</div>
               <div className="text-xs text-muted">{st.sub}</div>
             </div>
-          </div>
+          </Link>
           <ThemeToggle />
         </div>
       </aside>

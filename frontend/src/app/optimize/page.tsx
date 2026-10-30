@@ -55,25 +55,24 @@ function describe(p: any): string {
 
 function Stepper({ current, done }: { current: number; done: number }) {
   return (
-    <ol className="mb-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+    <ol className="mb-8 flex items-start overflow-x-auto pb-1" aria-label="Optimization progress">
       {STEPS.map((s, i) => {
         const n = i + 1;
         const state = n < done ? "done" : n === current ? "current" : "todo";
         return (
-          <li
-            key={s}
-            className={`flex items-center gap-2 rounded-xl border px-3 py-2 text-sm ${
-              state === "current" ? "border-accent bg-accent-soft text-accent-strong" : state === "done" ? "border-border text-fg" : "border-border text-muted"
-            }`}
-          >
-            <span
-              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold ${
-                state === "done" ? "bg-accent text-accent-ink" : state === "current" ? "bg-accent text-accent-ink" : "bg-panel-2 text-muted"
-              }`}
-            >
-              {state === "done" ? "✓" : n}
-            </span>
-            <span className="truncate">{s}</span>
+          <li key={s} className="flex min-w-[68px] flex-1 flex-col items-center" aria-current={state === "current" ? "step" : undefined}>
+            <div className="flex w-full items-center">
+              <span className={`h-px flex-1 ${i === 0 ? "opacity-0" : n <= done ? "bg-accent" : "bg-border-strong"}`} />
+              <span
+                className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[13px] font-semibold transition-colors ${
+                  state === "done" ? "bg-accent-strong text-accent-ink" : state === "current" ? "bg-accent-strong text-accent-ink ring-4 ring-accent-soft" : "border border-border-strong bg-panel text-muted"
+                }`}
+              >
+                {state === "done" ? "✓" : n}
+              </span>
+              <span className={`h-px flex-1 ${i === STEPS.length - 1 ? "opacity-0" : n < done ? "bg-accent" : "bg-border-strong"}`} />
+            </div>
+            <span className={`mt-2 text-xs ${state === "todo" ? "text-muted" : "font-medium text-fg"}`}>{s}</span>
           </li>
         );
       })}
@@ -229,8 +228,8 @@ function WorkloadPicker({ onCreate, busy }: { onCreate: (body: any) => void; bus
                 <br />
                 Verified by: {checks.join(", ")}
               </p>
-              <button className="btn btn-primary mt-4" disabled={busy} onClick={() => onCreate({ preset: w.id })}>
-                Select workload
+              <button className="btn mt-4" disabled={busy} onClick={() => onCreate({ preset: w.id })}>
+                Select workload <Icon name="arrowRight" size={15} />
               </button>
             </Card>
           );

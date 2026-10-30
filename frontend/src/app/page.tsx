@@ -8,6 +8,57 @@ import Icon from "@/components/Icon";
 import { Bars, BackendHint, Card, ErrorBox, Loading, PageHeader, SampleBanner, Stat, tierColor } from "@/components/ui";
 import { Donut, LineChart, Sparkline, type Slice } from "@/components/charts";
 
+/** The routing ladder: roles, not performance claims. */
+function TierOrbit() {
+  const tiers = [
+    { k: "large", label: "Nemotron Ultra", role: "baseline · escalation", x: 62, y: 14 },
+    { k: "medium", label: "Nemotron Super", role: "intermediate tasks", x: 68, y: 50 },
+    { k: "small", label: "Nemotron Nano", role: "lower-cost tasks", x: 34, y: 84 },
+  ];
+  return (
+    <div className="relative mx-auto aspect-square w-full max-w-[420px]" aria-label="Nemotron model tiers used for routing">
+      <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full" aria-hidden="true">
+        <defs>
+          <radialGradient id="orb" cx="45%" cy="40%" r="60%">
+            <stop offset="0%" stopColor="var(--sage)" stopOpacity="0.9" />
+            <stop offset="55%" stopColor="var(--accent-soft)" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="var(--bg)" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <circle cx="50" cy="50" r="46" fill="none" stroke="var(--border-strong)" strokeWidth="0.25" />
+        <circle cx="50" cy="50" r="34" fill="none" stroke="var(--border)" strokeWidth="0.25" />
+        <circle cx="50" cy="50" r="26" fill="url(#orb)" />
+      </svg>
+      {tiers.map((t) => (
+        <div key={t.k} className="card absolute flex -translate-x-1/2 -translate-y-1/2 items-center gap-2 rounded-full px-3 py-1.5 text-xs" style={{ left: `${t.x}%`, top: `${t.y}%` }}>
+          <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ background: tierColor(t.k) }} />
+          <span className="whitespace-nowrap font-medium">{t.label}</span>
+          <span className="hidden whitespace-nowrap text-muted sm:inline">{t.role}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** Latest optimization verified on real Nebius traffic, read from the API. Hidden when there is none. */
+function VerifiedRun() {
+  const { data } = useApi<any>("/api/optimize/sessions?limit=20");
+  const run = data?.items?.find((h: any) => h.provider === "nebius" && ["awaiting_approval", "accepted"].includes(h.status));
+  if (!run) return null;
+  return (
+    <Link href={`/optimize?id=${run.id}`} className="card fade-in mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 px-5 py-4 hover:border-border-strong">
+      <span className="eyebrow">Latest verified optimization</span>
+      <span className="display text-[19px]">{run.title}</span>
+      <span className="text-sm text-muted">
+        {run.summary.tasks} tasks · gate passed · cost <b className="text-fg">{signedPct(run.summary.cost_rel, 0)}</b> · safety drill {run.summary.drill_rejected ? "rejected" : "—"}
+      </span>
+      <span className="ml-auto inline-flex items-center gap-1 text-sm font-medium text-accent">
+        View evidence <Icon name="arrowRight" size={15} />
+      </span>
+    </Link>
+  );
+}
+
 const DAYS = 14;
 const DAY = 86400;
 
@@ -141,20 +192,31 @@ export default function Overview() {
 
   return (
     <div>
-      <PageHeader
-        title="EcoCompute"
-        subtitle="An evidence-driven agent that finds wasted inference compute in your recurring AI workloads, fixes it within hard bounds, and proves quality held."
-        actions={
-          <>
-            <Link href="/playground" className="btn">
-              <Icon name="play" size={16} /> Try one task
-            </Link>
+      <section className="fade-in mb-10 grid grid-cols-1 items-center gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <div className="min-w-0">
+          <div className="eyebrow mb-4">Evidence-driven inference</div>
+          <h1 className="display text-[44px] leading-[1.04] md:text-[60px]">
+            Find wasted compute.
+            <br />
+            Keep the quality.
+            <br />
+            <span className="italic text-accent">Lighter on the planet.</span>
+          </h1>
+          <p className="mt-5 max-w-xl text-[16px] leading-relaxed text-muted">
+            EcoCompute measures your recurring AI workloads, lets NVIDIA Nemotron diagnose where compute is wasted, and keeps only the bounded changes that deterministic checks prove safe. Nothing is applied without your approval.
+          </p>
+          <div className="mt-7 flex flex-wrap items-center gap-3">
             <Link href="/optimize" className="btn btn-primary">
-              <Icon name="bolt" size={16} /> Optimize a workload
+              Optimize a workload <Icon name="arrowRight" size={16} />
             </Link>
-          </>
-        }
-      />
+            <Link href="/playground" className="btn">
+              Try one task
+            </Link>
+          </div>
+        </div>
+        <TierOrbit />
+      </section>
+      <VerifiedRun />
       <ErrorBox error={error} hint={<BackendHint />} />
       <SampleBanner show={o?.sample_data} />
       {!o && !error && <Loading />}
@@ -328,12 +390,12 @@ export default function Overview() {
                   ].map(([name, state, tone, detail]) => (
                     <div key={name} className="flex items-center gap-3 px-4 py-3">
                       <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full bg-accent-strong" />
-                      <span className="min-w-0 flex-1">{name}</span>
+                      <span className="min-w-0 flex-1 truncate">{name}</span>
                       <span className="flex shrink-0 items-center gap-1.5 whitespace-nowrap" style={{ color: tone === "ok" ? "var(--accent)" : "var(--warn)" }}>
                         <span className="inline-block h-2 w-2 rounded-full" style={{ background: "currentColor" }} />
                         {state}
                       </span>
-                      <span className="hidden shrink-0 whitespace-nowrap text-right text-muted sm:inline">{detail}</span>
+                      <span className="hidden shrink-0 whitespace-nowrap text-right text-muted 2xl:inline">{detail}</span>
                     </div>
                   ))}
                 </div>
