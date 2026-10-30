@@ -1,6 +1,6 @@
 # Results
 
-**Status (2026-10-30): live Nebius inference verified, and one real optimizer run recorded (support-ops). The other workloads and the held-out benchmark are still pending.** This file reports only what has actually been run. Rows marked *pending* are filled from committed `benchmarks/results/*-nebius.json` bundles, never by hand and never from the mock provider.
+**Status (2026-10-30): live Nebius inference verified, one real optimizer run recorded (support-ops), and the held-out benchmark run twice on real Nebius.** This file reports only what has actually been run. Rows marked *pending* are filled from committed `benchmarks/results/*-nebius.json` bundles, never by hand and never from the mock provider.
 
 ## What has been verified
 
@@ -34,13 +34,15 @@ Reproduce: `python scripts/run_challenge.py routine|demanding|fault_drill` with 
 
 ## EcoBench v1 held-out test split (35 tasks, real Nebius)
 
-| Condition | Pass rate (95% Wilson CI) | Cost / success | Tokens / task | Mean latency | Escalation rate |
-| --- | --- | --- | --- | --- | --- |
-| fixed:large (baseline) | *pending* | | | | |
-| fixed:medium | *pending* | | | | |
-| fixed:small | *pending* | | | | |
-| adaptive (prior only) | *pending* | | | | |
-| adaptive_warm (calibration evidence) | *pending* | | | | |
+Primary run `1c62f1ef2642451f`, after calibration run `c143a70690b64c44`. Full analysis, the replicate run and every failure: [BENCHMARK.md](BENCHMARK.md).
+
+| Condition | Pass rate (95% Wilson CI) | Cost / task | Cost vs baseline (95% CI) | Median / p95 latency | Escalation rate | Per-task vs baseline |
+| --- | --- | --- | --- | --- | --- | --- |
+| fixed:large (baseline) | 33/35, 94.3% [81.4, 98.4] | $0.000980 | — | 1,124 / 2,923 ms | 0% | — |
+| adaptive (prior only) | 34/35, 97.1% [85.5, 99.5] | $0.000212 | **−78.4%** [−87.8, −65.7] | 1,886 / 6,860 ms | 5.7% | 0 lost, 1 gained |
+| adaptive_warm (calibration evidence) | 34/35, 97.1% [85.5, 99.5] | $0.000188 | **−80.8%** [−93.0, −66.0] | 1,570 / 5,713 ms | 8.6% | 0 lost, 1 gained |
+
+Not a quality-improvement claim: the pass-rate difference CI is [0, +8.6 pts]. Latency is worse (mean +62–72%). Replicate run `895becc994d74ff5`: −69% / −73% cost, 0 tasks lost.
 
 Reproduce:
 

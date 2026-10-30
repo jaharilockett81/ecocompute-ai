@@ -117,7 +117,19 @@ Three scenarios: **Routine triage** (a small model should pass first time) and *
 | Estimated energy (central) | 0.79 Wh | 0.25 Wh (−69%, estimate) |
 | Safety drill | — | shell command refused before execution; 16-token cap rejected (0/8 passed) |
 
-Nemotron Super diagnosed over-provisioning from the measured token profile. It proposed routing classification and extraction to Super with caps above the observed maxima, plus escalation for extraction. The one-time analysis cost ($0.003) is repaid after about two runs of the workload. This is one 8-task run, so it is evidence that the loop works on real inference, not a general savings claim. Everything verified so far, and everything still pending, is listed in [docs/RESULTS.md](docs/RESULTS.md).
+Nemotron Super diagnosed over-provisioning from the measured token profile. It proposed routing classification and extraction to Super with caps above the observed maxima, plus escalation for extraction. The one-time analysis cost ($0.003) is repaid after about two runs of the workload. This is one 8-task run, so it is evidence that the loop works on real inference, not a general savings claim. Everything verified so far is listed in [docs/RESULTS.md](docs/RESULTS.md).
+
+**Held-out benchmark (Nebius, 35 EcoBench tasks the router never saw, 2026-10-30).** Full analysis in [docs/BENCHMARK.md](docs/BENCHMARK.md).
+
+| | Always Nemotron Ultra | Adaptive routing (calibrated) |
+| --- | --- | --- |
+| Tasks passed | 33/35 | 34/35; **0 tasks lost** vs Ultra, 1 gained |
+| Cost per task | $0.000980 | $0.000188 (**−80.8%**, 95% CI −93% to −66%) |
+| Models used | Ultra 35 | Nano 32, Ultra 3 (escalations caught by validators) |
+| Median / p95 latency | 1.1 s / 2.9 s | 1.6 s / 5.7 s (**slower**: tradeoff) |
+| Tokens per task | 395 | 427 (+8%, CI includes 0) |
+
+A replicate run gave −69% to −73% cost with 0 tasks lost. The pass-rate difference interval includes zero, so we claim **no loss of required quality**, not better quality. Savings come from cheaper models, not fewer tokens, and latency is worse.
 
 ## The app
 

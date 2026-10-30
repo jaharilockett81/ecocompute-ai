@@ -51,11 +51,12 @@ Tests: 68 backend tests pass; `tsc` and `next build` pass. No backend logic was 
 - `cd frontend && npx tsc --noEmit && npm run build`: passes.
 - The full `/optimize` journey was driven in a headless browser against the mock provider (select → baseline → analysis → approve → verify with drill → decision), with no console errors.
 - `scripts/run_optimizer.py` was run on the mock provider. The output is sample data and is not reported anywhere as a result.
-- **Real benchmarks:** none yet (see 2).
+- **Real benchmarks:** calibration + two held-out runs on Nebius, see [BENCHMARK.md](BENCHMARK.md).
 
 ## 4. Remaining limitations
 
-- No live Nebius evidence yet; the hosted demo and the YouTube video do not exist yet.
+- The hosted demo and the YouTube video do not exist yet.
+- Adaptive routing is slower than always-Ultra on the held-out set (mean +62–72%, p95 about 2×).
 - An accepted recommendation is exported, not applied to the live Playground router. That is deliberate for safety, but it means "apply" is a manual step.
 - Each optimizer run uses 8 tasks once per configuration: enough to show per-task regressions, not enough for statistical claims. The 35-task benchmark carries the CIs.
 - The optimizer verifies on the same workload it tunes on (intended for recurring jobs, stated in the UI and README).
@@ -70,14 +71,14 @@ Tests: 68 backend tests pass; `tsc` and `next build` pass. No backend logic was 
 | NVIDIA open model used | ☑ verified live | Nemotron via Token Factory |
 | Architecture diagram | ☑ | README |
 | One complete end-to-end optimization trace | ☑ real | docs/TRACE.md + committed nebius bundle |
-| Reproducible baseline vs optimized benchmark | ☑ one real workload / ☐ more workloads + held-out benchmark | `run_optimizer.py data-pipeline`, `mixed-agent`; `run_benchmark.py` |
+| Reproducible baseline vs optimized benchmark | ☑ optimizer workload + held-out benchmark (2 runs) | docs/BENCHMARK.md; optional: `run_optimizer.py data-pipeline`, `mixed-agent` |
 | Deliberate failure/rejection scenario | ☑ | Optimizer drill + Challenge drill (tested) |
 | Passing tests with output | ☑ | `docs/TEST_OUTPUT.txt` |
 | Public repo, license, setup instructions | ☑ | — |
 | Functioning hosted demo | ☐ | Deploy the backend (Render/HF Spaces) + frontend (Vercel) |
 | Public YouTube video < 3 min | ☐ | Record from the script in `docs/submission.md` |
 | Judge-facing README for all four criteria | ☑ | Fill the Live demo / Video links and the Results rows |
-| Devpost copy | ◐ | Fill the TBDs from real bundles only |
+| Devpost copy | ◐ results filled | App URL and video link |
 
 ## 6. Suggested scores today (1–5), with evidence
 
@@ -87,7 +88,7 @@ These are scores for the repository as it stands now, not for what it would be a
 | --- | --- | --- | --- |
 | Technological implementation | **4** (was 3 before the live run) | 5 | The loop is complete and tested: structured output, allowlist, independent gate, bounded refinement, retries, timeouts, budgets, sandboxed code checks, human approval, and 66 passing tests. Now verified live: verify_nebius PASS and a real optimizer run (docs/TRACE.md). What's missing for a 5 is the hosted demo. |
 | Design | **4–5** | 5 | Every screen now follows the approved design, checked in light, dark and at phone width, with AA contrast. The seven-step journey handles every state. Not yet seen on a hosted URL. |
-| Potential impact | **3–4** (one real run: −64% cost at equal quality, +33% latency) | 4 | Clear audience, cost/tokens/latency/CPU/calls/energy-estimate reporting and break-even, honest limits. But no real savings number exists yet, and n=8 per workload is small. |
+| Potential impact | **4** (held-out: −81% cost, 0 of 35 tasks lost, replicated; latency worse) | 4–5 | Clear audience, cost/tokens/latency/CPU/calls/energy-estimate reporting and break-even, honest limits. But no real savings number exists yet, and n=8 per workload is small. |
 | Quality of the idea | **4** | 4–5 | The separation of powers (the model proposes, deterministic measurement decides, a human signs off) on real workloads is distinct from profilers, linters, code assistants and routers, and it is visible in the implementation. The EcoGuard comparison is missing. |
 
 The fastest way to raise all four scores: put the key on a reachable host, run `verify_nebius.py` and one `run_optimizer.py`, commit the bundle, deploy, and record the video.

@@ -24,7 +24,7 @@ A labelled safety drill proves the safeguards. It injects a shell command, which
 
 ### Results
 Optimizer on real Nebius, support-ops workload (8 tasks, one run): quality held at 7/8 with no per-task regression, inference cost −63.7% ($0.00545 → $0.00198), tokens −11.6%, estimated energy −69%. Tradeoff: summed model latency +33% (one escalation). The safety drill refused an injected shell command and rejected an injected 16-token cap (0/8 passed). Source: `benchmarks/results/optimization-b75c45c2fcc1431f-nebius.json`, `docs/TRACE.md`.
-On the 35 held-out EcoBench tasks, versus always using Nemotron Ultra: TBD pass rate (95% CI TBD) at TBD% of the cost (95% CI TBD), with TBD% fewer tokens and TBD latency change. (Source: `benchmarks/results/run-TBD-nebius.json`.)
+On 35 held-out EcoBench tasks versus always using Nemotron Ultra, calibrated adaptive routing passed 34/35 against 33/35, losing no task that Ultra passed, at 80.8% lower cost (95% CI −93% to −66%). The tradeoff: it was slower (median 1.6 s vs 1.1 s, p95 5.7 s vs 2.9 s), and tokens did not fall; the saving comes from cheaper models. A replicate run gave −69% to −73% cost, also with 0 tasks lost. The pass-rate difference CI includes zero, so we claim no quality loss, not a quality gain. (Source: `benchmarks/results/run-1c62f1ef2642451f-nebius.json`, `docs/BENCHMARK.md`.)
 
 ### How we built it
 FastAPI + SQLite backend; Nebius Token Factory through its OpenAI-compatible API (retries, catalog validation, reasoning-token accounting); Beta-posterior routing policy; deterministic validators and a sandboxed Python runner; Next.js frontend with SSE live traces; Docker backend + Vercel frontend. A labelled safety drill corrupts a real answer on purpose to prove the gate rejects bad candidates before approval.
@@ -35,7 +35,7 @@ FastAPI + SQLite backend; Nebius Token Factory through its OpenAI-compatible API
 - Environmental impact can't be measured through an API, so we report it as a bounded estimate with every assumption listed.
 
 ### What we learned
-TBD after the real run (e.g. which categories Nano handles reliably, where Super is the sweet spot).
+On real runs, Nano handled classification, coding, reasoning and data interpretation in our test set, but missed details in summaries (dropping "load balancer" or writing "Nov 20"); escalation caught those. Nano was the cheapest per call but also the slowest on this endpoint (median 6.1 s vs 1.0 s for Ultra), so cost and latency pulled in opposite directions. Strict validators also flag answers a person would accept ("Dr. Priya Raman"); we kept them strict rather than tune them after the fact.
 
 ### What's next
 Learned per-customer evidence, more validators, multi-provider tiers, and a drop-in OpenAI-compatible proxy endpoint.
@@ -45,11 +45,11 @@ nvidia-nemotron, nebius-token-factory, python, fastapi, sqlite, next.js, react, 
 
 ### Try it
 - App: TBD (access code for paid calls: in the testing instructions)
-- Code: TBD (MIT)
+- Code: https://github.com/jaharilockett81/ecocompute-ai (MIT)
 - Video: TBD
 
 ### Platform feedback (Nebius Token Factory)
-TBD: note anything real from setup, e.g. catalog model IDs vs docs, usage fields for reasoning tokens, rate limits, latency.
+The OpenAI-compatible API made the integration quick, and usage includes reasoning tokens, which matter: most Nemotron completion tokens on our tasks were reasoning (e.g. 8,441 of 10,241 for Ultra on the held-out set). The serverless endpoints expose no GPU or power telemetry, so energy has to be estimated. Per-call latency varied by model in ways we did not expect (Nano slower than Ultra on our runs).
 
 ## Demo video script (under 3 minutes)
 
