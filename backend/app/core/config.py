@@ -199,8 +199,8 @@ def load_settings() -> Settings:
         nebius_api_key=api_key,
         nebius_base_url=os.environ.get("NEBIUS_BASE_URL", "https://api.tokenfactory.nebius.com/v1/").rstrip("/") + "/",
         tiers=tuple(tiers),
-        router_model=os.environ.get("NEBIUS_ROUTER_MODEL", tiers[0].model_id),
-        judge_model=os.environ.get("NEBIUS_JUDGE_MODEL", tiers[min(1, len(tiers) - 1)].model_id),
+        router_model=os.environ.get("NEBIUS_ROUTER_MODEL", "").strip() or tiers[0].model_id,
+        judge_model=os.environ.get("NEBIUS_JUDGE_MODEL", "").strip() or tiers[min(1, len(tiers) - 1)].model_id,
         baseline_tier=os.environ.get("ECOCOMPUTE_BASELINE_TIER", tiers[-1].key),
         request_timeout_s=_float("ECOCOMPUTE_REQUEST_TIMEOUT_S", 90.0) or 90.0,
         max_retries=_int("ECOCOMPUTE_MAX_RETRIES", 3),
@@ -221,7 +221,7 @@ def load_settings() -> Settings:
         min_start_pass=_float("ECOCOMPUTE_MIN_START_PASS", 0.5),
         database_path=os.environ.get("ECOCOMPUTE_DB_PATH", str(data_dir / "ecocompute.db")),
         data_dir=data_dir,
-        analyst_model=os.environ.get("NEBIUS_ANALYST_MODEL", tiers[min(1, len(tiers) - 1)].model_id),
+        analyst_model=os.environ.get("NEBIUS_ANALYST_MODEL", "").strip() or tiers[min(1, len(tiers) - 1)].model_id,
     )
 
 

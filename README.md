@@ -1,63 +1,99 @@
 # EcoCompute AI
 
-**Quality-aware, evidence-driven inference routing across NVIDIA Nemotron models on Nebius Token Factory.**
+**An evidence-driven optimization agent that treats wasted AI computation as a fixable software-engineering problem.**
 
-Most teams send every request to their largest model because they can't tell in advance which requests a smaller model would get right. EcoCompute makes that call per task. It starts each workload on the smallest Nemotron tier that is *likely* to pass an objective quality gate, checks the output deterministically, and escalates only when the check actually fails. Every decision, call, token and cent is recorded and shown, and the router learns from each outcome.
+EcoCompute measures a recurring AI workload, has **NVIDIA Nemotron (via Nebius Token Factory)** diagnose where compute is wasted and propose bounded changes, runs those changes on the same tasks, and keeps only what independent validators and measurements confirm. A human accepts, rejects or exports the result. Nothing is applied automatically.
 
-> Submitted to the Coding & Agentic Engineering track. License: MIT. Engineering audit: [docs/AUDIT.md](docs/AUDIT.md). Results: [docs/RESULTS.md](docs/RESULTS.md).
+> Coding & Agentic Engineering track · MIT license · [Engineering audit](docs/AUDIT.md) · [Results](docs/RESULTS.md) · [Methodology](docs/methodology.md)
 
-<!-- TODO before submission: hosted demo URL, YouTube link, and the real benchmark table below. -->
-
+<!-- TODO before submission: hosted demo URL and YouTube link. -->
 - **Live demo:** _TBD_
 - **Demo video (< 3 min):** _TBD_
 
-## What it does
+**Who it is for:** ML engineers and small AI teams that run the same LLM jobs every day (ticket triage, extraction, ETL enrichment, eval suites) and send all of it to their biggest model because they cannot tell which tasks a smaller one would get right.
 
-| Step | What happens |
+## The loop
+
+```
+observe ─► reason ─► propose ─► approve ─► execute ─► measure ─► verify ─► (refine) ─► decide
+baseline   Nemotron   JSON,     human      same       tokens,    determin-  regressions  human:
+run        reads the  allow-    picks what tasks,     cost,      istic      go back to   accept /
+           measured   listed    may be     candidate  latency,   gate,      Nemotron,    reject /
+           profile    knobs     tested     config     CPU, est.  no LLM     ≤3 rounds    export
+                                                       energy
+```
+
+| Step | Implementation | File |
+| --- | --- | --- |
+| Observe | Runs every task of the workload on the current configuration (largest Nemotron, no escalation) and profiles it per category: pass rate, output and reasoning tokens, truncations, latency, cost. | `backend/app/optimizer.py` `run_baseline`, `build_profile` |
+| Reason + propose | One Nemotron call (default Nemotron Super) in JSON mode. It returns a diagnosis citing the measured numbers, plus proposals. If JSON mode is unsupported it retries once with plain JSON prompting; malformed or off-schema output is reported, never guessed. | `call_analyst`, `ANALYST_SCHEMA` |
+| Constrain | Each proposal is checked against an **allowlist of three knobs**: `route_category` (which tier answers), `cap_output_tokens`, `enable_escalation`. Unknown actions, tiers, categories or values are refused **before anything runs**. The agent cannot execute code or commands and cannot edit the live router. | `validate_proposal` |
+| Approve | A human selects which valid proposals may be tested (testing spends real calls). | `/optimize` step 4 |
+| Execute + measure | The candidate configuration runs on the same tasks at temperature 0. Every call records provider-reported tokens, latency, cost and request ID; the backend's CPU time and a FLOPs-based energy estimate are added. | `execute` |
+| Verify | A deterministic gate, independent of any model: same tasks, no provider errors, **no task that passed on the baseline may fail**, pass count preserved, cost (or tokens) strictly lower. Task quality itself is checked by deterministic validators (JSON Schema, exact fields, labels, numeric tolerance, sandboxed unit tests). | `gate` |
+| Refine | If the gate rejects, the regressions and gate results go back to Nemotron, which revises its proposals. Bounded to 1–3 rounds. | `verify` |
+| Safety drill | EcoCompute injects two labelled bad proposals: an `execute_command` that must be refused by the allowlist, and a 16-token output cap that passes the schema but must be rejected by measurement. | `drill_proposals` |
+| Decide | A verified recommendation waits for a human to accept, reject or export it (JSON config plus the full evidence bundle). | `decide`, `export` |
+
+## What is new here
+
+| Compared with | They | EcoCompute |
+| --- | --- | --- |
+| Profilers and monitoring dashboards | show where time and money go | acts on it: proposes a change, tests it on the real workload, and proves quality held |
+| Static linters | flag patterns in code without running it | judges changes by measured behaviour on your actual tasks |
+| Code assistants | generate code you must trust | never runs generated code; the model can only set three bounded knobs, and a deterministic gate decides |
+| Model routers | route each request by a fixed policy | derive the policy from your own measured workload, with per-task regression proof and a human sign-off |
+
+The defining piece is the **separation of powers**: Nemotron reasons and proposes, deterministic validators and measurements decide, and a human approves.
+
+## Judging criteria map
+
+| Criterion | Evidence in this repo |
 | --- | --- |
-| **Analyze** | Rule-based features: category, complexity, expected output size. Every rule that fires is shown in the trace. |
-| **Select** | Picks the start tier that minimises the expected cost of the whole escalation chain, subject to a quality target, a per-workload budget, latency, and a 50% first-attempt pass floor. Pass probabilities are Beta posteriors per (category, tier). |
-| **Execute** | Calls Nebius Token Factory (OpenAI-compatible API). Records provider-reported prompt, completion and reasoning tokens, latency, request id and cost. Retries 429/5xx/timeouts with backoff. |
-| **Evaluate** | Deterministic validators: JSON Schema, exact fields, exact/label/numeric/regex answers, required terms, word and bullet limits, and Python unit tests in a sandboxed subprocess. An optional model judge is labelled an estimate. |
-| **Repair / Escalate** | One bounded repair on structural failures, then escalate to the next tier with a fresh prompt. |
-| **Approve** | Model output is untrusted. An answer is approved for release only after the deterministic checks pass; a failing answer is never approved. |
-| **Record / Learn** | Persists the full machine-readable trace and updates routing evidence. |
+| Technological implementation | Nebius Token Factory client with timeouts, bounded retries and catalog verification; Nemotron analyst with JSON-mode structured output; allowlist; independent gate; bounded refinement; sandboxed code checks; budget and rate guardrails; 66 tests ([output](docs/TEST_OUTPUT.txt)). |
+| Design | `/optimize`: a seven-step guided journey (workload → baseline → analysis → review → verify → before/after → decision) with loading, empty, error and success states; light and dark themes; every number links to its raw record. |
+| Potential impact | Reports pass rate, cost, tokens, model time, wall time, backend CPU time, model calls, estimated energy, and a break-even point (runs until the optimisation pays for itself). GPU telemetry is marked not observable. |
+| Quality of the idea | Waste as a correctable engineering defect: measured, diagnosed by Nemotron, fixed within hard bounds, verified, signed off. See "What is new here". |
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  UI[Next.js UI<br/>Challenge, Playground, Benchmarks] -- SSE --> API[FastAPI]
-  CLI[scripts/*.py] --> R
-  API --> R[Router agent]
-  R --> A[Analyze<br/>rule-based features] --> S[Select<br/>Beta posterior, min expected chain cost]
-  S --> X[Execute]
-  X -- HTTPS, retries, timeouts --> NF[(Nebius Token Factory<br/>NVIDIA Nemotron Nano / Super / Ultra)]
-  X --> E{Deterministic gate<br/>schema, fields, tests}
-  E -- fail --> ESC[Repair / escalate<br/>bounded] --> X
-  E -- pass --> AP[Approve for release]
-  AP --> REC[Record trace, tokens, cost, request IDs] --> DB[(SQLite + JSON bundles)]
-  REC --> L[Learn: update evidence] --> S
-  G[Guardrails: access code, rate limit,<br/>per-workload and daily budget] -.-> X
+  UI[Next.js UI<br/>Optimize, Challenge, Benchmarks] -- SSE --> API[FastAPI]
+  CLI[scripts/*.py] --> OPT
+  API --> OPT[Optimizer agent]
+  OPT -- profile --> AN[Nemotron analyst<br/>JSON mode]
+  AN -- proposals --> AL{Allowlist<br/>3 knobs}
+  AL -- refused --> LOG[(Execution log)]
+  AL -- valid --> HA[Human approves test]
+  HA --> RUN[Run candidate config on the same tasks]
+  RUN --> R[Router engine<br/>execute, validate, escalate]
+  R -- HTTPS, retries, timeouts --> NF[(Nebius Token Factory<br/>Nemotron Nano / Super / Ultra)]
+  R --> V{Deterministic validators}
+  RUN --> G{Gate<br/>no regression, lower cost}
+  G -- rejected --> AN
+  G -- accepted --> HD[Human: accept / reject / export]
+  RUN --> DB[(SQLite + JSON evidence bundles)]
+  GR[Guardrails: access code, rate limit,<br/>per-workload and daily budget] -.-> R
 ```
 
 ## Models and services actually used
 
 | What | Detail | Verified? |
 | --- | --- | --- |
-| Nebius service | **Nebius Token Factory** chat completions (`https://api.tokenfactory.nebius.com/v1/`, OpenAI-compatible) and its `/models` catalog. No Nebius AI Cloud compute is used. | Client is unit-tested; a live call is verified with `scripts/verify_nebius.py` (see [RESULTS](docs/RESULTS.md) for status) |
-| NVIDIA open models | Nemotron 3 Nano 30B-A3B (small), Nemotron 3 Super 120B-A12B (medium), Nemotron 3 Ultra 550B-A55B (large, the baseline) | IDs below are checked against the authenticated catalog by `verify_nebius.py`; override with `NEBIUS_MODEL_SMALL|MEDIUM|LARGE` if they differ |
-| Everything else | Rule-based routing and deterministic validation run locally and make no model calls. The optional model judge is off by default and labelled an estimate. | — |
+| Nebius service | **Nebius Token Factory** chat completions (`https://api.tokenfactory.nebius.com/v1/`, OpenAI-compatible) and its `/models` catalog. No Nebius AI Cloud compute is used. | Client is unit-tested. Live status is in [RESULTS](docs/RESULTS.md); run `scripts/verify_nebius.py`. |
+| NVIDIA open models | Nemotron 3 Nano 30B-A3B (small), Nemotron 3 Super 120B-A12B (medium, default analyst), Nemotron 3 Ultra 550B-A55B (large, the baseline) | `verify_nebius.py` checks the IDs against the authenticated catalog; override them with `NEBIUS_MODEL_SMALL\|MEDIUM\|LARGE` and `NEBIUS_ANALYST_MODEL`. |
+| Everything else | Validators, the gate, the allowlist and the per-request router policy are local code and make no model calls. | — |
 
-Model tiers (configurable):
+## Measurements and their limits
 
-| Tier | Default model | Active params |
-| --- | --- | --- |
-| small | `nvidia/NVIDIA-Nemotron-3-Nano-30B-A3B` | 3B |
-| medium | `nvidia/nemotron-3-super-120b-a12b` | 12B |
-| large (baseline) | `nvidia/Nemotron-3-Ultra-550b-a55b` | 55B |
+- **Measured:** provider-reported prompt, completion and reasoning tokens; per-call and wall-clock latency; backend process CPU time (orchestration and validation, not model compute); number of calls; cost = tokens × configured price; pass/fail per task.
+- **Estimated:** energy, CO₂e and water, from FLOPs ≈ 2 × active parameters × tokens with low/central/high scenarios ([methodology](docs/methodology.md)). These are not power measurements.
+- **Not observable:** GPU utilisation, GPU memory and electrical power. Token Factory is serverless and exposes no hardware telemetry.
+- **Sample size:** each preset workload has 8 tasks, run once per configuration at temperature 0. That is enough to show per-task regressions, not to claim statistical significance; the separate 35-task held-out benchmark reports Wilson and bootstrap CIs.
+- **Reuse caveat:** the optimizer verifies on the same recurring workload it tuned on. That is the intended use (a job you run every day), and it is stated on every result.
 
-## The EcoCompute Challenge (90-second demo)
+## The EcoCompute Challenge (per-request routing demo)
 
 Open **The Challenge** page and click **Run live** on a scenario. The same task goes down two lanes at once, both making genuine Nebius calls at temperature 0:
 
@@ -70,25 +106,7 @@ Three scenarios: **Routine triage** (a small model should pass first time) and *
 
 ## Results
 
-<!-- Fill from benchmarks/results/run-<id>-nebius.json after the real run. Never paste mock numbers here. -->
-
-See [docs/RESULTS.md](docs/RESULTS.md) for what has been verified so far. _Pending: the held-out benchmark on real Nebius calls has not been run yet._ The table will report, for each condition on the 35 held-out EcoBench test tasks: pass rate with Wilson 95% CI, total cost, cost per success, tokens per task, mean latency and escalation rate, plus paired bootstrap 95% CIs for the difference versus always using the large model.
-
-## The app
-
-| Page | Purpose |
-| --- | --- |
-| The Challenge | Live two-lane demo: EcoCompute vs fixed baseline on the same task, with verdict and verifiable call log |
-| Overview | Pass rate, cost per success, escalation rate, latest benchmark, where workloads finish |
-| Playground | Presets or your own task, routing preview (free), live streamed trace, result |
-| Router | Tier table, policy settings, evidence heatmap (prior vs observed vs posterior) |
-| Benchmark Lab | Start runs, live progress, results with CIs, paired comparisons, per-category view, JSON export |
-| Impact | A measured / B estimated (low-central-high) / C not observable |
-| History | Every workload with its trace and attempts |
-| Methodology | Equations, validators, benchmark design, impact assumptions and sources |
-| Settings | API URL, demo access code, backend config, catalog diagnostics |
-
-Anything produced by the offline mock provider is labelled **sample data** in the API (`sample_data: true`) and with a banner in the UI.
+See [docs/RESULTS.md](docs/RESULTS.md). It reports only what has actually been run, and marks every real-Nebius number as pending until a committed `*-nebius.json` evidence bundle backs it.
 
 ## Run locally
 
@@ -100,7 +118,7 @@ cp .env.example .env            # add NEBIUS_API_KEY; leave it empty to use the 
 # backend
 cd backend
 pip install -r requirements-dev.txt
-python -m pytest -q             # 52 tests, offline
+python -m pytest -q             # 66 tests, offline
 uvicorn app.main:app --reload --port 8000
 
 # frontend (new terminal)
@@ -110,7 +128,13 @@ npm install
 npm run dev                     # http://localhost:3000
 ```
 
-Run the Challenge from the terminal (also shows up in the UI): `python scripts/run_challenge.py routine` or `demanding`.
+Run the optimizer from the terminal (same code path as the UI; stops at "awaiting approval"):
+
+```bash
+python scripts/run_optimizer.py support-ops          # or data-pipeline, mixed-agent, --upload my_workload.json
+```
+
+Run the Challenge from the terminal: `python scripts/run_challenge.py routine|demanding|fault_drill`.
 
 Verify a real Nebius call and the configured model IDs:
 
@@ -137,6 +161,7 @@ All configuration is environment variables; see [`.env.example`](.env.example). 
 | --- | --- |
 | `NEBIUS_API_KEY` | Enables real inference. Without it the mock provider is used. |
 | `NEBIUS_MODEL_SMALL/MEDIUM/LARGE` | Model IDs per tier. |
+| `NEBIUS_ANALYST_MODEL` | Nemotron model that diagnoses workloads and proposes optimizations (default: the medium tier). |
 | `NEBIUS_PRICE_IN_*/OUT_*` | USD per 1M tokens; used for cost. Without prices, cost shows as unavailable and the router uses a relative cost proxy. |
 | `ECOCOMPUTE_DEMO_ACCESS_CODE` | If set, paid endpoints require the `X-Access-Code` header. |
 | `ECOCOMPUTE_DAILY_BUDGET_USD`, `ECOCOMPUTE_MAX_WORKLOAD_COST_USD`, `ECOCOMPUTE_BENCHMARK_MAX_CALLS`, `ECOCOMPUTE_RATE_LIMIT_PER_MINUTE` | Spend guardrails. |
@@ -151,10 +176,10 @@ All configuration is environment variables; see [`.env.example`](.env.example). 
 ## Repository layout
 
 ```
-backend/        FastAPI app (router engine, policy, validators, providers, benchmark, impact estimator) + tests
+backend/        FastAPI app (optimizer agent, router engine, validators, providers, benchmark, impact estimator) + tests
 frontend/       Next.js app
 benchmarks/     EcoBench v1 dataset and exported results
-scripts/        verify_nebius.py, run_challenge.py, run_benchmark.py
+scripts/        verify_nebius.py, run_optimizer.py, run_challenge.py, run_benchmark.py
 docs/           methodology, results, engineering audit, submission kit
 DECISIONS.md    design decisions and trade-offs
 ```

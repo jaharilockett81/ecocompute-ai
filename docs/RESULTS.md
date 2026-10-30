@@ -6,10 +6,21 @@
 
 | Check | How | Result |
 | --- | --- | --- |
-| Router, validators, approval gate, escalation, safety drill, comparison logic | `cd backend && pytest -q` (deterministic fixtures, no network) | 57 passed |
+| Optimizer loop, router, validators, approval gate, escalation, safety drills, comparison logic | `cd backend && pytest -q` (deterministic fixtures, no network) | 66 passed ([output](TEST_OUTPUT.txt)) |
+| Optimizer end to end (UI + API + CLI), including allowlist refusal, gate rejection of the injected 16-token cap, and accept/reject/export | Mock provider, in a browser and via `scripts/run_optimizer.py` | Runs and is labelled sample data. The mock numbers are **not** results. |
 | Frontend | `npx tsc --noEmit && npm run build` | passes |
 | Challenge end to end (UI + API + CLI), including the safety drill | Mock provider, in a browser and via `scripts/run_challenge.py` | Runs and is labelled sample data. The mock numbers are **not** results. |
 | Nebius catalog + model IDs | `python scripts/verify_nebius.py` | *pending: needs a key on a host that can reach Nebius* |
+
+## Optimizer (real Nebius)
+
+| Workload | Baseline (pass, cost, tokens) | Accepted round | Optimized (pass, cost, tokens) | Δ cost | Δ model time | Drill rejected? | Bundle |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| support-ops (8 tasks) | *pending* | | | | | | |
+| data-pipeline (8 tasks) | *pending* | | | | | | |
+| mixed-agent (8 tasks) | *pending* | | | | | | |
+
+Reproduce: `python scripts/run_optimizer.py <workload>` with `NEBIUS_API_KEY` set. The script writes `benchmarks/results/optimization-<id>-nebius.json`, which contains every task, call, request ID, the analyst's raw proposals, the allowlist verdicts, each gate check and the drill. Hardware: Nebius Token Factory serverless endpoints; the provider does not disclose or expose the GPU type or utilisation. Backend CPU time is measured on whatever host runs EcoCompute.
 
 ## EcoCompute Challenge (real Nebius)
 

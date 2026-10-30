@@ -6,23 +6,24 @@ Fill every `TBD` from the real Nebius run. Do not use mock numbers.
 
 **Name:** EcoCompute AI
 
-**Tagline:** Use the smallest NVIDIA Nemotron model that gets it right, and prove it.
+**Tagline:** An evidence-driven Nemotron agent that finds wasted AI compute, fixes it within hard bounds, and proves quality held.
 
 ### Inspiration
 Most apps send every request to their biggest model because they can't tell in advance which requests a smaller one would get right. That wastes money, latency and energy on tasks a 3B-active model handles fine. We wanted a router that makes this call per task and shows its evidence.
 
 ### What it does
-EcoCompute AI is an inference router for NVIDIA Nemotron models on Nebius Token Factory. For each task it:
-1. analyzes the task (category, complexity, expected output size),
-2. picks the start model that minimises the expected cost of the whole escalation chain while meeting a quality target,
-3. calls Nebius and records provider-reported tokens, latency and cost,
-4. checks the answer with deterministic validators (JSON Schema, exact fields, numeric tolerance, required terms, word limits, sandboxed unit tests),
-5. repairs or escalates to a larger Nemotron only if the check fails, and
-6. learns from the outcome.
+EcoCompute AI is an optimization agent for recurring LLM workloads. It runs on NVIDIA Nemotron models via Nebius Token Factory.
+1. **Observe.** It runs your workload as it runs today, on the largest Nemotron, and profiles every task: pass/fail from a deterministic check, tokens, reasoning tokens, truncations, latency and cost.
+2. **Reason and propose.** Nemotron reads the measured profile, diagnoses the waste, and proposes changes as structured JSON.
+3. **Constrain.** Proposals may only set three knobs: which tier answers a category, an output-token cap, and escalation on validator failure. Anything else is refused before it runs.
+4. **Approve, execute, measure.** You pick what to test. The candidate configuration runs on the same tasks.
+5. **Verify.** A deterministic gate rejects any change where a task that passed now fails, or where cost does not fall. Regressions go back to Nemotron for a bounded number of refinement rounds.
+6. **Decide.** A verified recommendation waits for you to accept, reject or export it.
 
-Every step streams live to the UI as a machine-readable trace. A Benchmark Lab runs our 49-task EcoBench against fixed-model baselines with confidence intervals, and an Impact page separates measured cost and tokens from transparent energy, carbon and water estimates.
+A labelled safety drill proves the safeguards. It injects a shell command, which is refused by the allowlist, and a harmful 16-token cap, which is rejected by measurement. The app also includes a per-request routing Challenge, a 49-task benchmark with confidence intervals, and an Impact page that separates measured cost from estimated energy.
 
 ### Results
+Optimizer on real Nebius: TBD (from `benchmarks/results/optimization-*-nebius.json`).
 On the 35 held-out EcoBench tasks, versus always using Nemotron Ultra: TBD pass rate (95% CI TBD) at TBD% of the cost (95% CI TBD), with TBD% fewer tokens and TBD latency change. (Source: `benchmarks/results/run-TBD-nebius.json`.)
 
 ### How we built it
@@ -54,17 +55,18 @@ TBD: note anything real from setup, e.g. catalog model IDs vs docs, usage fields
 
 | Time | Show | Say |
 | --- | --- | --- |
-| 0:00–0:15 | Overview | "Most apps send every request to their biggest model. EcoCompute uses the smallest Nemotron that gets it right, and proves it." |
-| 0:15–1:05 | The Challenge → Routine triage → Run live | "Same task, two lanes, real Nebius calls." Point at the policy picking Nano, the validator passing, the baseline on Ultra, then the comparison row for cost and latency and the verdict. |
-| 1:05–1:40 | The Challenge → Demanding extraction → Run live | If Nano fails: show the validator's exact failure, the automatic escalation, the re-check against the same requirement. If Nano passes: say so — "escalation is never forced." Read the verdict, including any tradeoff. |
-| 1:40–2:00 | The Challenge → Safety drill → Run live | "This one is a deliberate test, labelled INJECTED: we corrupt Nano's real answer. The gate rejects it, nothing bad is approved, and the router recovers on Super." |
-| 2:00–2:20 | Verify it yourself | Request IDs and models as reported by Nebius; open the raw JSON link. "This is an agent making real decisions, not a dashboard." |
-| 2:20–2:45 | Benchmark Lab, completed real run | Held-out pass rates with CIs and the paired cost delta vs Ultra. |
-| 2:45–2:55 | Methodology | "Every decision is explainable; every number is sourced." |
+| 0:00–0:15 | Overview | "Teams send every recurring AI job to their biggest model. EcoCompute treats that waste as a bug: it measures, lets Nemotron diagnose, and keeps only fixes that are proven safe." |
+| 0:15–0:35 | Optimize → Support ops batch → Run baseline | "Eight real tasks on Nemotron Ultra via Nebius Token Factory, each with a deterministic check." Point at pass count, cost, tokens, and the "GPU not observable" note. |
+| 0:35–1:05 | Run Nemotron analysis → Review | Read one finding and its cited evidence. "Nemotron can only touch three knobs. Anything else is refused before it runs." Select the proposals. |
+| 1:05–1:50 | Approve test → live verification → gate | "Same tasks, candidate config." Show the gate checks. If round 1 was rejected, show the regressions going back to Nemotron and round 2. Report what actually happened. |
+| 1:50–2:15 | Safety drill card | "We inject two bad proposals. A shell command: refused, never executed. A 16-token cap: allowed by the schema, so we run it, and the gate rejects it on measured regressions." |
+| 2:15–2:40 | Before/after → Decision | Cost, tokens, model time, estimated energy (labelled estimate), break-even. Click Accept. Export the recommendation. |
+| 2:40–2:55 | README | "Open source, MIT, reproducible with one script. Every number links to a provider request ID." |
 
 ## Testing instructions for judges
 1. Open the app URL. The sidebar should show "backend: nebius".
 2. Settings → enter the access code → Save.
-3. The Challenge → Run live on either scenario (about a minute). Check the request IDs and open the raw JSON links.
-4. Playground → choose a preset → Run workload.
-5. Benchmark Lab → open the completed run to see full results.
+3. Optimize → pick a workload → Run baseline → Run Nemotron analysis → Approve test (a few minutes in total) → Accept or Reject → Export.
+4. The Challenge → Run live on any scenario. Check the request IDs and open the raw JSON links.
+5. Playground → choose a preset → Run workload.
+6. Benchmark Lab → open the completed run to see full results.

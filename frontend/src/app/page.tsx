@@ -143,11 +143,16 @@ export default function Overview() {
     <div>
       <PageHeader
         title="EcoCompute"
-        subtitle="Inference optimization for a more efficient AI future."
+        subtitle="An evidence-driven agent that finds wasted inference compute in your recurring AI workloads, fixes it within hard bounds, and proves quality held."
         actions={
-          <Link href="/playground" className="btn btn-primary">
-            <Icon name="play" size={16} /> Run Workload
-          </Link>
+          <>
+            <Link href="/playground" className="btn">
+              <Icon name="play" size={16} /> Try one task
+            </Link>
+            <Link href="/optimize" className="btn btn-primary">
+              <Icon name="bolt" size={16} /> Optimize a workload
+            </Link>
+          </>
         }
       />
       <ErrorBox error={error} hint={<BackendHint />} />
