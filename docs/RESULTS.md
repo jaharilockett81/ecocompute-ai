@@ -1,6 +1,6 @@
 # Results
 
-**Status (2026-10-30): no real Nebius measurements have been recorded yet.** This file reports only what has actually been run. Rows marked *pending* are filled from committed `benchmarks/results/*-nebius.json` bundles, never by hand and never from the mock provider.
+**Status (2026-10-30): live Nebius inference verified (see below); optimizer and benchmark results not recorded yet.** This file reports only what has actually been run. Rows marked *pending* are filled from committed `benchmarks/results/*-nebius.json` bundles, never by hand and never from the mock provider.
 
 ## What has been verified
 
@@ -10,7 +10,7 @@
 | Optimizer end to end (UI + API + CLI), including allowlist refusal, gate rejection of the injected 16-token cap, and accept/reject/export | Mock provider, in a browser and via `scripts/run_optimizer.py` | Runs and is labelled sample data. The mock numbers are **not** results. |
 | Frontend | `npx tsc --noEmit && npm run build` | passes |
 | Challenge end to end (UI + API + CLI), including the safety drill | Mock provider, in a browser and via `scripts/run_challenge.py` | Runs and is labelled sample data. The mock numbers are **not** results. |
-| Nebius catalog + model IDs | `python scripts/verify_nebius.py` | *pending: needs a key on a host that can reach Nebius* |
+| Nebius catalog + model IDs | `python scripts/verify_nebius.py`, run by the author on a laptop, 2026-10-30 | **PASS: genuine Nebius inference verified.** Example from the run: `nvidia/Nemotron-3-Ultra-550b-a55b` answered (model reported = model requested), 37 prompt / 166 completion (158 reasoning) tokens, 1027.5 ms, request `chatcmpl-bc04339055083597`. |
 
 ## Optimizer (real Nebius)
 

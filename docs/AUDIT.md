@@ -27,7 +27,7 @@ This audit separates what is implemented and tested from what depends on credent
 
 ## 2. Real integration verification
 
-**None yet.** This build environment's network proxy blocks `api.tokenfactory.nebius.com`, so no live Nebius call has been made from here. The Nebius client is unit-tested with mocked HTTP. The model IDs in `.env.example` are unverified until `python scripts/verify_nebius.py` runs with a real key. This is the single most important open item.
+**Update 2026-10-30: `scripts/verify_nebius.py` passed on the author's machine** ("PASS — genuine Nebius inference verified"; e.g. Nemotron Ultra, request `chatcmpl-bc04339055083597`). Originally: this build environment's network proxy blocks `api.tokenfactory.nebius.com`, so no live Nebius call has been made from here. The Nebius client is unit-tested with mocked HTTP. The model IDs in `.env.example` are unverified until `python scripts/verify_nebius.py` runs with a real key. This is the single most important open item.
 
 ## 3. Tests and benchmarks actually run
 
@@ -50,8 +50,8 @@ This audit separates what is implemented and tested from what depends on credent
 
 | Item | Status | Needs |
 | --- | --- | --- |
-| Real Nebius Token Factory call + verified Nemotron IDs | ☐ | Key on a host that can reach Nebius: run `scripts/verify_nebius.py` |
-| NVIDIA open model used | ☑ in code / ☐ verified live | same |
+| Real Nebius Token Factory call + verified Nemotron IDs | ☑ | verify_nebius.py PASS, 2026-10-30 |
+| NVIDIA open model used | ☑ verified live | Nemotron via Token Factory |
 | Architecture diagram | ☑ | README |
 | One complete end-to-end optimization trace | ☐ real / ☑ sample | `scripts/run_optimizer.py support-ops` with the key, then commit the bundle |
 | Reproducible baseline vs optimized benchmark | ☑ code / ☐ real numbers | same, plus `run_benchmark.py` |
