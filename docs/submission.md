@@ -23,7 +23,7 @@ EcoCompute AI is an optimization agent for recurring LLM workloads. It runs on N
 A labelled safety drill proves the safeguards. It injects a shell command, which is refused by the allowlist, and a harmful 16-token cap, which is rejected by measurement. The app also includes a per-request routing Challenge, a 49-task benchmark with confidence intervals, and an Impact page that separates measured cost from estimated energy.
 
 ### Results
-Optimizer on real Nebius: TBD (from `benchmarks/results/optimization-*-nebius.json`).
+Optimizer on real Nebius, support-ops workload (8 tasks, one run): quality held at 7/8 with no per-task regression, inference cost −63.7% ($0.00545 → $0.00198), tokens −11.6%, estimated energy −69%. Tradeoff: summed model latency +33% (one escalation). The safety drill refused an injected shell command and rejected an injected 16-token cap (0/8 passed). Source: `benchmarks/results/optimization-b75c45c2fcc1431f-nebius.json`, `docs/TRACE.md`.
 On the 35 held-out EcoBench tasks, versus always using Nemotron Ultra: TBD pass rate (95% CI TBD) at TBD% of the cost (95% CI TBD), with TBD% fewer tokens and TBD latency change. (Source: `benchmarks/results/run-TBD-nebius.json`.)
 
 ### How we built it

@@ -53,8 +53,8 @@ This audit separates what is implemented and tested from what depends on credent
 | Real Nebius Token Factory call + verified Nemotron IDs | ☑ | verify_nebius.py PASS, 2026-10-30 |
 | NVIDIA open model used | ☑ verified live | Nemotron via Token Factory |
 | Architecture diagram | ☑ | README |
-| One complete end-to-end optimization trace | ☐ real / ☑ sample | `scripts/run_optimizer.py support-ops` with the key, then commit the bundle |
-| Reproducible baseline vs optimized benchmark | ☑ code / ☐ real numbers | same, plus `run_benchmark.py` |
+| One complete end-to-end optimization trace | ☑ real | docs/TRACE.md + committed nebius bundle |
+| Reproducible baseline vs optimized benchmark | ☑ one real workload / ☐ more workloads + held-out benchmark | `run_optimizer.py data-pipeline`, `mixed-agent`; `run_benchmark.py` |
 | Deliberate failure/rejection scenario | ☑ | Optimizer drill + Challenge drill (tested) |
 | Passing tests with output | ☑ | `docs/TEST_OUTPUT.txt` |
 | Public repo, license, setup instructions | ☑ | — |
@@ -69,9 +69,9 @@ These are scores for the repository as it stands now, not for what it would be a
 
 | Criterion | Now | After real runs + deploy | Why |
 | --- | --- | --- | --- |
-| Technological implementation | **3** | 4–5 | The loop is complete and tested: structured output, allowlist, independent gate, bounded refinement, retries, timeouts, budgets, sandboxed code checks, human approval, and 66 passing tests. But no live Nemotron call has been demonstrated, and judges weigh that heavily. |
+| Technological implementation | **4** (was 3 before the live run) | 5 | The loop is complete and tested: structured output, allowlist, independent gate, bounded refinement, retries, timeouts, budgets, sandboxed code checks, human approval, and 66 passing tests. Now verified live: verify_nebius PASS and a real optimizer run (docs/TRACE.md). What's missing for a 5 is the hosted demo. |
 | Design | **4** | 4–5 | A coherent seven-step journey with every state handled, light and dark themes, before/after pairs on a shared scale, and drill and gate cards. Not yet seen with real data or on a hosted URL. |
-| Potential impact | **3** | 4 | Clear audience, cost/tokens/latency/CPU/calls/energy-estimate reporting and break-even, honest limits. But no real savings number exists yet, and n=8 per workload is small. |
+| Potential impact | **3–4** (one real run: −64% cost at equal quality, +33% latency) | 4 | Clear audience, cost/tokens/latency/CPU/calls/energy-estimate reporting and break-even, honest limits. But no real savings number exists yet, and n=8 per workload is small. |
 | Quality of the idea | **4** | 4–5 | The separation of powers (the model proposes, deterministic measurement decides, a human signs off) on real workloads is distinct from profilers, linters, code assistants and routers, and it is visible in the implementation. The EcoGuard comparison is missing. |
 
 The fastest way to raise all four scores: put the key on a reachable host, run `verify_nebius.py` and one `run_optimizer.py`, commit the bundle, deploy, and record the video.

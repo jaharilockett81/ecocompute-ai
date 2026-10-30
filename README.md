@@ -106,7 +106,35 @@ Three scenarios: **Routine triage** (a small model should pass first time) and *
 
 ## Results
 
-See [docs/RESULTS.md](docs/RESULTS.md). It reports only what has actually been run, and marks every real-Nebius number as pending until a committed `*-nebius.json` evidence bundle backs it.
+**First real run (Nebius Token Factory, 2026-10-30):** the `support-ops` workload (8 tasks), full trace in [docs/TRACE.md](docs/TRACE.md).
+
+| | Baseline: all Nemotron Ultra | Verified by the gate: Nemotron's proposals |
+| --- | --- | --- |
+| Tasks passed | 7/8 | 7/8, no per-task regression |
+| Inference cost | $0.005453 | $0.001980 (**−63.7%**) |
+| Tokens | 2,389 | 2,112 (−11.6%) |
+| Summed model latency | 9.7 s | 12.9 s (**+33%**, tradeoff: one escalation; Super was not faster per call on this run) |
+| Estimated energy (central) | 0.79 Wh | 0.25 Wh (−69%, estimate) |
+| Safety drill | — | shell command refused before execution; 16-token cap rejected (0/8 passed) |
+
+Nemotron Super diagnosed over-provisioning from the measured token profile. It proposed routing classification and extraction to Super with caps above the observed maxima, plus escalation for extraction. The one-time analysis cost ($0.003) is repaid after about two runs of the workload. This is one 8-task run, so it is evidence that the loop works on real inference, not a general savings claim. Everything verified so far, and everything still pending, is listed in [docs/RESULTS.md](docs/RESULTS.md).
+
+## The app
+
+| Page | Purpose |
+| --- | --- |
+| Optimize | The main journey: pick or upload a workload, measure it, Nemotron analysis, review, verify, before/after, decide |
+| The Challenge | Per-request routing demo: EcoCompute vs fixed baseline on one task, with verdict and verifiable call log |
+| Overview | Pass rate, cost per success, escalation rate, latest benchmark, where workloads finish |
+| Playground | Presets or your own task, routing preview (free), live streamed trace, result |
+| Router | Tier table, policy settings, evidence heatmap (prior vs observed vs posterior) |
+| Benchmark Lab | Start runs, live progress, results with CIs, paired comparisons, per-category view, JSON export |
+| Impact | A measured / B estimated (low-central-high) / C not observable |
+| History | Every workload with its trace and attempts |
+| Methodology | Equations, validators, benchmark design, impact assumptions and sources |
+| Settings | API URL, demo access code, backend config, catalog diagnostics |
+
+Anything produced by the offline mock provider is labelled **sample data** in the API (`sample_data: true`) and with a banner in the UI.
 
 ## Run locally
 
