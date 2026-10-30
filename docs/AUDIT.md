@@ -2,6 +2,22 @@
 
 This audit separates what is implemented and tested from what depends on credentials or infrastructure. Nothing here claims a result that has not been run.
 
+## 0. Final upgrade pass (design, Benchmark Lab, submission)
+
+| Change | Evidence |
+| --- | --- |
+| Approved design system: ivory/forest light theme, evergreen/mint dark theme, Newsreader editorial headings, pill controls, reduced-motion aware fades | `globals.css`, `layout.tsx`. Every text token measured ≥ 5:1 contrast (WCAG AA) on its background in both themes; no horizontal scroll at 390 px on any of the 10 pages (headless check) |
+| Overview: editorial hero, tier map, latest verified Nebius run pulled from the API (nothing hard-coded) | `src/app/page.tsx` |
+| Model Router: model cards with routing roles ("lower-cost", "intermediate", "highest capability · escalation"), stated as roles, not performance guarantees | `src/app/router/page.tsx` |
+| Benchmark Lab: $/task, median and p95 latency (p95 hidden below n=20), per-task paired outcomes (both pass / both fail / gained / lost, with case IDs), a quality-failures list per condition, and a warning when a run isn't on the held-out split | `backend/app/benchmark/metrics.py`, `benchmarks/[id]/page.tsx`, `benchmarks/page.tsx`; new test for losses hidden behind equal pass rates |
+| Impact: A measured / B estimate (dashed, "estimate, not a measurement") / C not observable; the fixed-vs-adaptive comparison appears only when a completed run has both conditions on the same tasks | `src/app/impact/page.tsx` |
+| History: server-side search (task text, case ID, category, workload ID) with parameterized, wildcard-escaped LIKE, plus source and status filters | `store.list_workloads`, new API test incl. `%` and `' OR 1=1 --` |
+| Methodology: editorial, expandable sections, new "optimization loop" section and A/B/C explainer | `methodology/page.tsx` |
+| Settings: secure-configuration indicators (key set or not, never its value), daily spend meter, cost limits, analyst/judge models, diagnostics | `settings/page.tsx` |
+| Demo script rewritten to the seven-part video structure with the real run's numbers | `docs/submission.md` |
+
+Tests: 68 backend tests pass; `tsc` and `next build` pass. No backend logic was changed for appearance; the two backend changes (paired outcomes, history search) add data the UI needed.
+
 ## 1. What changed in the final pass
 
 | Change | Files |
@@ -70,7 +86,7 @@ These are scores for the repository as it stands now, not for what it would be a
 | Criterion | Now | After real runs + deploy | Why |
 | --- | --- | --- | --- |
 | Technological implementation | **4** (was 3 before the live run) | 5 | The loop is complete and tested: structured output, allowlist, independent gate, bounded refinement, retries, timeouts, budgets, sandboxed code checks, human approval, and 66 passing tests. Now verified live: verify_nebius PASS and a real optimizer run (docs/TRACE.md). What's missing for a 5 is the hosted demo. |
-| Design | **4** | 4–5 | A coherent seven-step journey with every state handled, light and dark themes, before/after pairs on a shared scale, and drill and gate cards. Not yet seen with real data or on a hosted URL. |
+| Design | **4–5** | 5 | Every screen now follows the approved design, checked in light, dark and at phone width, with AA contrast. The seven-step journey handles every state. Not yet seen on a hosted URL. |
 | Potential impact | **3–4** (one real run: −64% cost at equal quality, +33% latency) | 4 | Clear audience, cost/tokens/latency/CPU/calls/energy-estimate reporting and break-even, honest limits. But no real savings number exists yet, and n=8 per workload is small. |
 | Quality of the idea | **4** | 4–5 | The separation of powers (the model proposes, deterministic measurement decides, a human signs off) on real workloads is distinct from profilers, linters, code assistants and routers, and it is visible in the implementation. The EcoGuard comparison is missing. |
 
