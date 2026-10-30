@@ -33,7 +33,7 @@ Scored on the evidence in this repository today, not on what it might become. Th
 | --- | --- |
 | Uses NVIDIA Nemotron via Nebius Token Factory | ☑ verified live (verify_nebius PASS; all benchmark calls report Nemotron model IDs and provider nebius) |
 | Public code repository, open-source license | ☑ github.com/jaharilockett81/ecocompute-ai, MIT |
-| Working public demo URL | ☐ waiting on the Render + Vercel deploy |
+| Working public demo URL | ☑ https://ecocompute-ai.vercel.app (backend on Render free tier, provider nebius, access code required; confirmed working by the author 2026-10-30; this build environment cannot reach the host) |
 | Video under 3 minutes, public | ☐ script and recording plan ready in docs/submission.md |
 | Devpost text | ◐ written from real results; app and video links missing |
 | Testing instructions plus judge access code | ◐ instructions written; the code is set when deploying |
