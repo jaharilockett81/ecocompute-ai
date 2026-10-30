@@ -53,18 +53,20 @@ TBD: note anything real from setup, e.g. catalog model IDs vs docs, usage fields
 
 ## Demo video script (under 3 minutes)
 
+Record against the real Nebius backend (the sidebar card must read "Nebius", not "Mock provider"). Hide the terminal and `.env`; no key may appear on screen. Numbers below are from run `b75c45c2fcc1431f` (docs/TRACE.md); if you re-run live, say the numbers the screen shows, not these.
+
 | Time | Show | Say |
 | --- | --- | --- |
-| 0:00–0:15 | Overview | "Teams send every recurring AI job to their biggest model. EcoCompute treats that waste as a bug: it measures, lets Nemotron diagnose, and keeps only fixes that are proven safe." |
-| 0:15–0:35 | Optimize → Support ops batch → Run baseline | "Eight real tasks on Nemotron Ultra via Nebius Token Factory, each with a deterministic check." Point at pass count, cost, tokens, and the "GPU not observable" note. |
-| 0:35–1:05 | Run Nemotron analysis → Review | Read one finding and its cited evidence. "Nemotron can only touch three knobs. Anything else is refused before it runs." Select the proposals. |
-| 1:05–1:50 | Approve test → live verification → gate | "Same tasks, candidate config." Show the gate checks. If round 1 was rejected, show the regressions going back to Nemotron and round 2. Report what actually happened. |
-| 1:50–2:15 | Safety drill card | "We inject two bad proposals. A shell command: refused, never executed. A 16-token cap: allowed by the schema, so we run it, and the gate rejects it on measured regressions." |
-| 2:15–2:40 | Before/after → Decision | Cost, tokens, model time, estimated energy (labelled estimate), break-even. Click Accept. Export the recommendation. |
-| 2:40–2:55 | README | "Open source, MIT, reproducible with one script. Every number links to a provider request ID." |
+| 0:00–0:20 | **Problem.** Overview hero | "Teams send every recurring AI job to their biggest model. That is wasted compute, and nobody can prove which jobs could use less. EcoCompute makes that waste measurable, correctable and independently verifiable, without giving up required quality." |
+| 0:20–0:45 | **Architecture.** Methodology → section 1, then Model Router cards | "Nemotron Nano, Super and Ultra on Nebius Token Factory. Nemotron proposes; deterministic validators decide; a person signs off. The model can touch only three knobs." |
+| 0:45–1:20 | **Live routing and verification.** Optimize → Support ops → Run baseline → Run Nemotron analysis → review → Approve test | "Eight real tasks on Ultra: 7 of 8 pass. Nemotron Super reads the measured profile and proposes moving classification and extraction to Super with token caps. I approve the test; the gate re-runs the same tasks and checks for any per-task regression." |
+| 1:20–1:50 | **Baseline and benchmark.** Before/after card, then Benchmarks → held-out run (if completed) | "Same quality, 7 of 8, no task lost. Cost down 64 percent. But it was 33 percent slower, and we say so." Held-out run: read the paired outcomes column (gains and losses per task), not just the pass rates. If the held-out run isn't done, skip that part and don't mention it. |
+| 1:50–2:15 | **Safety.** Safety drill card (labelled safety test) | "This is a safety test. We inject two bad proposals. A shell command is refused before it runs. A 16-token cap passes the schema, so we run it, and the gate rejects it: 0 of 8 pass. The LLM can never override a failing validator." |
+| 2:15–2:40 | **Impact.** Impact page | "A is measured: tokens, cost, latency. B is an estimate with low, central and high bounds, never a power reading. C is what an API can't show: GPU utilisation and power. The analysis paid for itself after about two runs." |
+| 2:40–2:55 | **Close.** Decision → Accept → Export, then the README | "Nothing changes until a person accepts. Open source, MIT licensed, and every number links to a provider request ID." |
 
 ## Testing instructions for judges
-1. Open the app URL. The sidebar should show "backend: nebius".
+1. Open the app URL. The provider card at the bottom of the sidebar should read "Nebius" (if it reads "Mock provider", the backend has no key and everything is labelled sample data).
 2. Settings → enter the access code → Save.
 3. Optimize → pick a workload → Run baseline → Run Nemotron analysis → Approve test (a few minutes in total) → Accept or Reject → Export.
 4. The Challenge → Run live on any scenario. Check the request IDs and open the raw JSON links.
